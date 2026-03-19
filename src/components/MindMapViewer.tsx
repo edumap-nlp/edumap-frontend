@@ -4,7 +4,6 @@ import * as markmapView from 'markmap-view'
 import { Transformer } from 'markmap-lib'
 import type { MindMapViewerProps } from '../types'
 
-// Inject markmap styles once so the tree layout and links render correctly
 function injectMarkmapStyles() {
   if (document.getElementById('markmap-global-css')) return
   const style = document.createElement('style')
@@ -52,35 +51,37 @@ export default function MindMapViewer({
 
     try {
       const { root, features } = transformer.transform(markdown)
-      ensureAssets(transformer, features).then(() => {
-        if (cancelled || !containerRef.current) return
-        const parent = containerRef.current!
-        parent.innerHTML = ''
-        const svg = document.createElement('svg')
-        svg.setAttribute('class', 'markmap-svg')
-        const updateSize = () => {
-          if (!parent.isConnected) return
-          const w = parent.offsetWidth || 600
-          const h = Math.max(parent.offsetHeight || 500, 400)
-          svg.setAttribute('width', String(w))
-          svg.setAttribute('height', String(h))
-        }
-        updateSize()
-        const ro = new ResizeObserver(() => {
+      ensureAssets(transformer, features)
+        .then(() => {
+          if (cancelled || !containerRef.current) return
+          const parent = containerRef.current!
+          parent.innerHTML = ''
+          const svg = document.createElement('svg')
+          svg.setAttribute('class', 'markmap-svg')
+          const updateSize = () => {
+            if (!parent.isConnected) return
+            const w = parent.offsetWidth || 600
+            const h = Math.max(parent.offsetHeight || 500, 400)
+            svg.setAttribute('width', String(w))
+            svg.setAttribute('height', String(h))
+          }
           updateSize()
-          viewRef.current?.renderData()
+          const ro = new ResizeObserver(() => {
+            updateSize()
+            viewRef.current?.renderData()
+          })
+          ro.observe(parent)
+          resizeObserverRef.current = ro
+          parent.appendChild(svg)
+          const mm = Markmap.create(svg, undefined, root)
+          viewRef.current = mm
         })
-        ro.observe(parent)
-        resizeObserverRef.current = ro
-        parent.appendChild(svg)
-        const mm = Markmap.create(svg, undefined, root)
-        viewRef.current = mm
-      }).catch((err) => {
-        if (!cancelled) {
-          console.warn('Markmap assets load failed:', err)
-          setError('Failed to load mind map viewer.')
-        }
-      })
+        .catch((err) => {
+          if (!cancelled) {
+            console.warn('Markmap assets load failed:', err)
+            setError('Failed to load mind map viewer.')
+          }
+        })
     } catch (err) {
       console.warn('Markmap transform failed:', err)
       setError('Invalid markdown for mind map.')
