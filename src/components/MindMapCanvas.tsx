@@ -28,7 +28,6 @@ function MindMapCanvasInner({
   onNodesChange: _onNodesChangeExternal,
   onEdgesChange: onEdgesChangeExternal,
   onNodeClick: onNodeClickExternal,
-  onExpandNode,
   onNodeLabelChange,
   highlightedNodeId,
   onExportPng,
@@ -63,7 +62,6 @@ function MindMapCanvasInner({
             : n
         )
       )
-      // Notify parent to trigger LLM concept generation
       onNodeLabelChange?.(nodeId, newLabel)
     }
 
@@ -144,20 +142,11 @@ function MindMapCanvasInner({
     [isAddingNode, screenToFlowPosition, addNewNode]
   )
 
-  // Handle node click — expand or select
   const handleNodeClick: NodeMouseHandler = useCallback(
     (_event, node) => {
       onNodeClickExternal?.(node.id)
     },
     [onNodeClickExternal]
-  )
-
-  // Double-click to expand node
-  const handleNodeDoubleClick: NodeMouseHandler = useCallback(
-    (_event, node) => {
-      onExpandNode?.(node.id)
-    },
-    [onExpandNode]
   )
 
   // Delete selected nodes/edges with Delete or Backspace key
@@ -258,7 +247,6 @@ function MindMapCanvasInner({
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         onNodeClick={handleNodeClick}
-        onNodeDoubleClick={handleNodeDoubleClick}
         onPaneClick={onPaneClick}
         onDoubleClick={onPaneDoubleClick}
         nodeTypes={nodeTypes}

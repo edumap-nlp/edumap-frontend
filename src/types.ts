@@ -39,14 +39,14 @@ export const DEFAULT_LLM_CONFIGS: Record<string, LLMConfig> = {
   'gpt-5.2': { provider: 'openai', model: 'gpt-5.2' },
   'claude-opus-4.6': { provider: 'anthropic', model: 'claude-opus-4.6' },
   'claude-sonnet-4.6': { provider: 'anthropic', model: 'claude-sonnet-4.6' },
-  'gemini-3.1-pro': { provider: 'google', model: 'gemini-3.1-pro' },
+  'gemini-3-pro-preview': { provider: 'google', model: 'gemini-3-pro-preview' },
   'gpt-codex-5.3': { provider: 'openai-codex', model: 'gpt-codex-5.3' },
 }
 
 /* ── Agent Orchestration ── */
 export interface AgentTask {
   id: string
-  type: 'extract' | 'merge' | 'expand' | 'connect'
+  type: 'extract' | 'merge'
   documentId?: string
   model: string
   status: 'pending' | 'running' | 'done' | 'error'
@@ -94,10 +94,17 @@ export interface MindMapCanvasProps {
   onNodesChange: (nodes: MindMapNode[]) => void
   onEdgesChange: (edges: MindMapEdge[]) => void
   onNodeClick?: (nodeId: string) => void
-  onExpandNode?: (nodeId: string) => void
   onNodeLabelChange?: (nodeId: string, newLabel: string) => void
   highlightedNodeId?: string | null
   onExportPng?: () => void
+}
+
+/** Optional markmap-based viewer (not wired in MainEditor; kept for alternate layouts / future use). */
+export interface MindMapViewerProps {
+  markdown: string
+  onExportPng?: () => void
+  onExportSvg?: () => void
+  onExportMarkdown?: () => void
 }
 
 export interface TopNavProps {

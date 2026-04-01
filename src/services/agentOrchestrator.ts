@@ -1,11 +1,5 @@
 import type { PDFDocument, AgentTask } from '../types'
-import {
-  callLLM,
-  buildExtractionPrompt,
-  buildMergePrompt,
-  buildExpansionPrompt,
-  buildConnectionPrompt,
-} from './llmService'
+import { callLLM, buildExtractionPrompt, buildMergePrompt } from './llmService'
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://localhost:3001/api'
 
@@ -43,7 +37,7 @@ function selectModelForDocument(
 
   // Large documents → Gemini (large context)
   if (textLength > 20000 && available.google) {
-    return { provider: 'google', model: 'gemini-3.1-pro' }
+    return { provider: 'google', model: 'gemini-2.5-flash' }
   }
 
   // Code-heavy documents → Codex
@@ -177,62 +171,4 @@ export async function processDocumentsWithAgents(
       .join('\n\n')
     return { markdown: fallback, tasks: allTasks }
   }
-}
-
-/**
- * Expand a node by generating new sub-concepts.
- * Prefers Claude Opus for reasoning but falls back to OpenAI/Azure.
- */
-export async function expandNode(
-  nodeLabel: string,
-  nodeContext: string,
-  existingMarkdown: string
-): Promise<string> {
-  const available = await getAvailableProviders()
-  const provider = available.anthropic ? 'anthropic' : 'openai'
-  const model = available.anthropic ? 'claude-opus-4.6' : 'gpt-5.2'
-
-  const messages = buildExpansionPrompt(nodeLabel, nodeContext, existingMarkdown)
-  const response = await callLLM({
-    provider: provider as any,
-    model,
-    messages,
-  })
-  return response.content
-}
-
-/**
- * Find or create connections between two disjoint nodes.
- * Prefers Claude Opus for reasoning but falls back to OpenAI/Azure.
- */
-export async function findConnections(
-  nodeA: string,
-  nodeB: string,
-  existingMarkdown: string
-): Promise<{ relation: string; bridge: string; newConcepts: string }> {
-  const available = await getAvailableProviders()
-  const provider = available.anthropic ? 'anthropic' : 'openai'
-  const model = available.anthropic ? 'claude-opus-4.6' : 'gpt-5.2'
-
-  const messages = buildConnectionPrompt(nodeA, nodeB, existingMarkdown)
-  const response = await callLLM({
-    provider: provider as any,
-    model,
-    messages,
-  })
-
-  const lines = response.content.split('\n')
-  const relation = lines.find((l) => l.startsWith('RELATION:'))?.replace('RELATION:', '').trim() ?? ''
-  const bridge = lines.find((l) => l.startsWith('BRIDGE:'))?.replace('BRIDGE:', '').trim() ?? 'none'
-  const conceptStart = lines.findIndex((l) => l.startsWith('NEW_CONCEPTS:'))
-  const newConcepts =
-    conceptStart >= 0
-      ? lines
-          .slice(conceptStart)
-          .join('\n')
-          .replace('NEW_CONCEPTS:', '')
-          .trim()
-      : ''
-
-  return { relation, bridge, newConcepts }
 }
