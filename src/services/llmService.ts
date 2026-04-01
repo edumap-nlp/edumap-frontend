@@ -27,8 +27,8 @@ interface LLMResponse {
  */
 export async function callLLM(options: LLMCallOptions): Promise<LLMResponse> {
   const {
-    provider = 'openai',
-    model = 'gpt-5.2',
+    provider = 'google',
+    model = 'gemini-2.5-flash',
     messages,
     temperature = 0.3,
     maxTokens = 4096,
