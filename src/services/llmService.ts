@@ -13,6 +13,7 @@ const MAX_EXTRACT_CHARS = 200_000
 interface LLMMessage {
   role: 'system' | 'user' | 'assistant'
   content: string
+  userPrompt?: string
 }
 
 interface LLMCallOptions {
@@ -123,7 +124,7 @@ export function buildExtractionPrompt(documentText: string, documentName: string
     ? `\n\nAdditional instructions from the user: ${userPrompt}`
     : ''
   return [
-    { role: 'system', content: EXTRACTION_SYSTEM + extraInstruction},
+    { role: 'system', content: EXTRACTION_SYSTEM + extraInstruction },
     {
       role: 'user',
       content: `Extract a structured mind map from this document "${documentName}":\n\n${clipped}`,
@@ -135,13 +136,17 @@ export function buildExtractionPrompt(documentText: string, documentName: string
  * Messages for merging several per-document mind maps into one markdown tree.
  * `markdowns` / `docNames` must align by index.
  */
-export function buildMergePrompt(markdowns: string[], docNames: string[]): LLMMessage[] {
+export function buildMergePrompt(markdowns: string[], docNames: string[], userPrompt?: string): LLMMessage[] {
   const docs = markdowns
     .map((md, i) => `--- Document: ${docNames[i]} ---\n${md}`)
     .join('\n\n')
 
+  const extraInstruction = userPrompt
+    ? `\n\nAdditional instructions from the user: ${userPrompt}`
+    : ''
+
   return [
-    { role: 'system', content: MERGE_SYSTEM },
+    { role: 'system', content: MERGE_SYSTEM + extraInstruction },
     {
       role: 'user',
       content: `Merge these document mind maps into a unified mind map:\n\n${docs}`,

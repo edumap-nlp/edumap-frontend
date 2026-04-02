@@ -34,7 +34,6 @@ interface NodeIndexItem {
 }
 
 export default function MarkdownEditorPanel({
-  value,
   onChange,
   onSave,
   onCopyMarkdown,

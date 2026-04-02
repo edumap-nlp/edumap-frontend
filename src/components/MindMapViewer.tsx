@@ -4,12 +4,7 @@ import * as markmapView from 'markmap-view'
 import { Transformer } from 'markmap-lib'
 import type { IFeatures } from 'markmap-lib'
 import type { MindMapViewerProps } from '../types'
-export interface MindMapViewerProps {
-  markdown: string
-  onExportPng?: () => void
-  onExportSvg?: () => void
-  onExportMarkdown?: () => void
-}
+
 
 function injectMarkmapStyles() {
   if (document.getElementById('markmap-global-css')) return
