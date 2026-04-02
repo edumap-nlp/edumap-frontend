@@ -39,14 +39,14 @@ export default function MainEditor() {
 
   // Handle PDF upload → process with agents
   const handleDocumentsReady = useCallback(
-    async (docs: PDFDocument[]) => {
+    async (docs: PDFDocument[], prompt?: string) => {
       store.addDocuments(docs)
       store.setIsProcessing(true)
 
       try {
         const result = await processDocumentsWithAgents(docs, (tasks) => {
           store.setAgentTasks(tasks)
-        })
+        }, prompt)
         store.updateFromMarkdown(result.markdown)
       } catch (err) {
         console.error('Document processing failed:', err)

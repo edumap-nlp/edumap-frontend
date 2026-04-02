@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState, useEffect } from 'react'
+import { useCallback, useRef, useState, useEffect, useMemo } from 'react'
 import {
   ReactFlow,
   Background,
@@ -18,9 +18,83 @@ import {
 import '@xyflow/react/dist/style.css'
 import { toPng } from 'html-to-image'
 import { nodeTypes } from './MindMapNode'
-import type { MindMapEdge, MindMapCanvasProps, MindMapNodeData } from '../types'
+import type { MindMapEdge, MindMapCanvasProps, MindMapNode, MindMapNodeData } from '../types'
 
 let nextNodeId = 1000
+
+/**
+ * Maximum depth (inclusive) that is VISIBLE by default.
+ * Nodes at depth > MAX_VISIBLE_DEPTH are hidden until their ancestor is expanded.
+ * Depths are 1-based (root = 1, first branch = 2, ...).
+ */
+const MAX_VISIBLE_DEPTH = 4
+
+/**
+ * Build a child-map: nodeId → [childId, ...]
+ */
+function buildChildMap(edges: MindMapEdge[]): Map<string, string[]> {
+  const map = new Map<string, string[]>()
+  for (const e of edges) {
+    if (!map.has(e.source)) map.set(e.source, [])
+    map.get(e.source)!.push(e.target)
+  }
+  return map
+}
+
+/**
+ * Build nodeId → depth from the node data (the depth field already stored).
+ */
+function buildDepthMap(nodes: MindMapNode[]): Map<string, number> {
+  const map = new Map<string, number>()
+  for (const n of nodes) {
+    map.set(n.id, (n.data as MindMapNodeData).depth)
+  }
+  return map
+}
+
+/**
+ * Compute the initial set of collapsed node IDs:
+ * any node whose depth == MAX_VISIBLE_DEPTH AND has children should be collapsed
+ * so its children (depth > MAX_VISIBLE_DEPTH) stay hidden.
+ */
+function computeInitialCollapsed(
+  nodes: MindMapNode[],
+  edges: MindMapEdge[]
+): Set<string> {
+  const childMap = buildChildMap(edges)
+  const collapsed = new Set<string>()
+  for (const n of nodes) {
+    const depth = (n.data as MindMapNodeData).depth
+    if (depth >= MAX_VISIBLE_DEPTH && childMap.has(n.id)) {
+      collapsed.add(n.id)
+    }
+  }
+  return collapsed
+}
+
+/**
+ * Given a set of collapsed node IDs, collect all descendant IDs that
+ * should be hidden (collapsed nodes themselves stay visible).
+ */
+function collectHiddenIds(
+  collapsedIds: Set<string>,
+  childMap: Map<string, string[]>
+): Set<string> {
+  const hidden = new Set<string>()
+
+  function recurse(nodeId: string) {
+    for (const childId of childMap.get(nodeId) ?? []) {
+      hidden.add(childId)
+      recurse(childId)
+    }
+  }
+
+  for (const nodeId of collapsedIds) {
+    recurse(nodeId)
+  }
+
+  return hidden
+}
 
 function MindMapCanvasInner({
   nodes: initialNodes,
@@ -38,13 +112,23 @@ function MindMapCanvasInner({
   const { fitView, setCenter, getNodes, screenToFlowPosition } = useReactFlow()
   const [isAddingNode, setIsAddingNode] = useState(false)
 
-  // Sync external node/edge changes
-  const prevNodesRef = useRef(initialNodes)
-  const prevEdgesRef = useRef(initialEdges)
-  if (initialNodes !== prevNodesRef.current) {
-    prevNodesRef.current = initialNodes
+  // ── Collapse state ──────────────────────────────────────────────────────────
+  // Initialize collapsed set directly from initialNodes/initialEdges
+  const [collapsedNodeIds, setCollapsedNodeIds] = useState<Set<string>>(() =>
+    computeInitialCollapsed(initialNodes, initialEdges)
+  )
+
+  // Sync external node/edge changes and re-compute auto-collapse
+  const prevNodesKey = useRef('')
+  const nodeKey = initialNodes.map((n) => n.id).join(',')
+  if (nodeKey !== prevNodesKey.current) {
+    prevNodesKey.current = nodeKey
     setNodes(initialNodes)
+    // Re-compute collapsed state for new node set
+    setCollapsedNodeIds(computeInitialCollapsed(initialNodes, initialEdges))
   }
+
+  const prevEdgesRef = useRef(initialEdges)
   if (initialEdges !== prevEdgesRef.current) {
     prevEdgesRef.current = initialEdges
     setEdges(initialEdges)
@@ -54,7 +138,6 @@ function MindMapCanvasInner({
   useEffect(() => {
     const handler = (e: Event) => {
       const { nodeId, newLabel } = (e as CustomEvent).detail
-      // Update the node's label locally
       setNodes((nds) =>
         nds.map((n) =>
           n.id === nodeId
@@ -69,7 +152,57 @@ function MindMapCanvasInner({
     return () => window.removeEventListener('mindmap-node-label-change', handler)
   }, [setNodes, onNodeLabelChange])
 
-  // Handle new connections (user draws edge between nodes)
+  // Listen for collapse-toggle events dispatched by node buttons
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { nodeId } = (e as CustomEvent).detail as { nodeId: string }
+      setCollapsedNodeIds((prev) => {
+        const next = new Set(prev)
+        if (next.has(nodeId)) {
+          next.delete(nodeId)
+        } else {
+          next.add(nodeId)
+        }
+        return next
+      })
+    }
+    window.addEventListener('mindmap-node-collapse-toggle', handler)
+    return () => window.removeEventListener('mindmap-node-collapse-toggle', handler)
+  }, [])
+
+  // ── Derive visible nodes & edges based on collapsed state ──────────────────
+  const childMap = useMemo(() => buildChildMap(edges), [edges])
+  const depthMap = useMemo(() => buildDepthMap(nodes), [nodes])
+
+  const hiddenIds = useMemo(
+    () => collectHiddenIds(collapsedNodeIds, childMap),
+    [collapsedNodeIds, childMap]
+  )
+
+  const visibleNodes = useMemo(() => {
+    return nodes
+      .filter((n) => !hiddenIds.has(n.id))
+      .map((n) => {
+        const hasChildren = childMap.has(n.id)
+        const isCollapsed = collapsedNodeIds.has(n.id)
+        return {
+          ...n,
+          data: {
+            ...n.data,
+            hasChildren,
+            isCollapsed,
+          } as MindMapNodeData,
+        }
+      })
+  }, [nodes, hiddenIds, childMap, collapsedNodeIds])
+
+  const visibleEdges = useMemo(
+    () => edges.filter((e) => !hiddenIds.has(e.source) && !hiddenIds.has(e.target)),
+    [edges, hiddenIds]
+  )
+
+  // ── Handlers ────────────────────────────────────────────────────────────────
+
   const onConnect = useCallback(
     (connection: Connection) => {
       setEdges((currentEdges) => {
@@ -89,11 +222,10 @@ function MindMapCanvasInner({
     [setEdges, onEdgesChangeExternal]
   )
 
-  // Add new node at a position
   const addNewNode = useCallback(
     (x: number, y: number) => {
       const id = `node-new-${nextNodeId++}`
-      const newNode = {
+      const newNode: MindMapNode = {
         id,
         type: 'branchNode' as const,
         position: { x, y },
@@ -106,7 +238,6 @@ function MindMapCanvasInner({
       }
       setNodes((nds) => [...nds, newNode])
 
-      // Clear highlight after animation
       setTimeout(() => {
         setNodes((nds) =>
           nds.map((n) =>
@@ -123,7 +254,6 @@ function MindMapCanvasInner({
     [setNodes]
   )
 
-  // Double-click canvas → create new node at click position
   const onPaneDoubleClick = useCallback(
     (event: React.MouseEvent) => {
       const position = screenToFlowPosition({ x: event.clientX, y: event.clientY })
@@ -132,7 +262,6 @@ function MindMapCanvasInner({
     [screenToFlowPosition, addNewNode]
   )
 
-  // Click canvas in "add node" mode → create new node
   const onPaneClick = useCallback(
     (event: React.MouseEvent) => {
       if (!isAddingNode) return
@@ -160,7 +289,6 @@ function MindMapCanvasInner({
     [setNodes, setEdges]
   )
 
-  // Highlight a specific node (zoom + flash)
   const highlightNode = useCallback(
     (nodeId: string) => {
       const allNodes = getNodes()
@@ -188,7 +316,6 @@ function MindMapCanvasInner({
     [getNodes, setCenter, setNodes]
   )
 
-  // Expose highlight function via ref effect when highlightedNodeId changes
   const prevHighlightRef = useRef<string | null>(null)
   if (highlightedNodeId && highlightedNodeId !== prevHighlightRef.current) {
     prevHighlightRef.current = highlightedNodeId
@@ -197,7 +324,6 @@ function MindMapCanvasInner({
     prevHighlightRef.current = null
   }
 
-  // Export PNG — capture full canvas
   const handleExportPng = useCallback(async () => {
     if (!reactFlowWrapper.current) return
 
@@ -233,6 +359,22 @@ function MindMapCanvasInner({
     onExportPng?.()
   }, [getNodes, onExportPng])
 
+  // ── Expand/Collapse all ─────────────────────────────────────────────────────
+  const handleExpandAll = useCallback(() => setCollapsedNodeIds(new Set()), [])
+
+  const handleCollapseAll = useCallback(() => {
+    const toCollapse = new Set<string>()
+    for (const n of nodes) {
+      const depth = depthMap.get(n.id) ?? 0
+      if (childMap.has(n.id) && depth >= MAX_VISIBLE_DEPTH) {
+        toCollapse.add(n.id)
+      }
+    }
+    setCollapsedNodeIds(toCollapse)
+  }, [nodes, childMap, depthMap])
+
+  const hiddenCount = hiddenIds.size
+
   return (
     <div
       ref={reactFlowWrapper}
@@ -241,8 +383,8 @@ function MindMapCanvasInner({
       tabIndex={0}
     >
       <ReactFlow
-        nodes={nodes}
-        edges={edges}
+        nodes={visibleNodes}
+        edges={visibleEdges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
@@ -276,7 +418,7 @@ function MindMapCanvasInner({
           zoomable
           className="!bg-white !border !border-slate-200 !rounded-lg !shadow-sm"
         />
-        <Panel position="top-left" className="flex gap-2">
+        <Panel position="top-left" className="flex gap-2 flex-wrap">
           <button
             onClick={() => fitView({ duration: 400, padding: 0.2 })}
             className="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-700 text-xs font-medium hover:bg-slate-50 shadow-sm transition-colors"
@@ -291,7 +433,7 @@ function MindMapCanvasInner({
                 ? 'bg-blue-600 border-blue-600 text-white'
                 : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
             }`}
-            title="Click to toggle add-node mode, then click on the canvas to place a new node"
+            title="Toggle add-node mode"
           >
             ＋ Add Node
           </button>
@@ -302,6 +444,25 @@ function MindMapCanvasInner({
           >
             📷 PNG
           </button>
+          <button
+            onClick={handleExpandAll}
+            className="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-700 text-xs font-medium hover:bg-slate-50 shadow-sm transition-colors"
+            title="Expand all collapsed nodes"
+          >
+            ↔ Expand All
+          </button>
+          <button
+            onClick={handleCollapseAll}
+            className="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-700 text-xs font-medium hover:bg-slate-50 shadow-sm transition-colors"
+            title={`Collapse nodes beyond level ${MAX_VISIBLE_DEPTH}`}
+          >
+            ↕ Collapse All
+          </button>
+          {hiddenCount > 0 && (
+            <span className="px-3 py-1.5 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 text-xs font-medium shadow-sm">
+              {hiddenCount} node{hiddenCount !== 1 ? 's' : ''} hidden
+            </span>
+          )}
         </Panel>
         {isAddingNode && (
           <Panel position="bottom-center">

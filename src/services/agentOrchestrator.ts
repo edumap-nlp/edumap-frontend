@@ -91,7 +91,8 @@ export type ProgressCallback = (tasks: AgentTask[]) => void
  */
 export async function processDocumentsWithAgents(
   documents: PDFDocument[],
-  onProgress?: ProgressCallback
+  onProgress?: ProgressCallback,
+  userPrompt?: string
 ): Promise<{ markdown: string; tasks: AgentTask[] }> {
   const health = await getAvailableProviders()
   if (health.status !== 'ok') {
@@ -122,7 +123,7 @@ export async function processDocumentsWithAgents(
 
       try {
         const [provider, model] = task.model.split('/')
-        const messages = buildExtractionPrompt(task.input, documents[idx].name)
+        const messages = buildExtractionPrompt(task.input, documents[idx].name, userPrompt)
         const response = await callLLM({
           provider: provider as LLMProvider,
           model,
@@ -173,7 +174,7 @@ export async function processDocumentsWithAgents(
   onProgress?.(allTasks)
 
   try {
-    const mergeMessages = buildMergePrompt(markdowns, docNames)
+    const mergeMessages = buildMergePrompt(markdowns, docNames, userPrompt)
     const mergeResponse = await callLLM({
       provider: mergePick.provider,
       model: mergePick.model,

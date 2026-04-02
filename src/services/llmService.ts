@@ -115,10 +115,15 @@ const MERGE_SYSTEM = [
 /**
  * Messages for one PDF: system rules + user chunk of document text → markdown mind map.
  */
-export function buildExtractionPrompt(documentText: string, documentName: string): LLMMessage[] {
+export function buildExtractionPrompt(documentText: string, documentName: string, userPrompt?: string): LLMMessage[] {
   const clipped = documentText.slice(0, MAX_EXTRACT_CHARS)
+
+  // Extra instructions by the user
+  const extraInstruction = userPrompt
+    ? `\n\nAdditional instructions from the user: ${userPrompt}`
+    : ''
   return [
-    { role: 'system', content: EXTRACTION_SYSTEM },
+    { role: 'system', content: EXTRACTION_SYSTEM + extraInstruction},
     {
       role: 'user',
       content: `Extract a structured mind map from this document "${documentName}":\n\n${clipped}`,
