@@ -5,7 +5,7 @@ import type { LLMProvider } from '../types'
 const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://localhost:3001/api'
 
 /** Max characters of PDF text sent into a single extraction request. */
-const MAX_EXTRACT_CHARS = 30_000
+const MAX_EXTRACT_CHARS = 200_000
 
 
 
@@ -63,28 +63,52 @@ export async function callLLM(options: LLMCallOptions): Promise<LLMResponse> {
 
 // ── System prompts (string[] + join keeps sent text free of code-indent spaces) ──
 const EXTRACTION_SYSTEM = [
-  'You are an expert at extracting structured knowledge from documents.',
-  'Given a document, extract the key concepts, their hierarchical relationships, and semantic connections.',
-  'Output ONLY valid markdown in a mind-map hierarchy using headings (# ## ### etc.) and bullet points.',
-  'Include tags like [Hard], [Important], or [Low Priority] where appropriate.',
-  'Add brief descriptions as sub-bullets where they add value.',
-  'Group related concepts under common parent headings.',
-  'Identify cross-cutting themes that connect different sections.',
+  'You are an expert at reading academic papers and building concept maps for students.',
+  '',
+  'Identify the core IDEAS in the document and organize them by logical dependency, not by document structure.',
+  '',
+  'What counts as a concept:',
+  '- A technique, method, or algorithm',
+  '- A problem or challenge being addressed',
+  '- A theoretical principle or finding',
+  '',
+  'What does NOT count:',
+  '- Paper sections ("Related Work", "Evaluation", "Future Work")',
+  '- The paper title or topic as a root node',
+  '- Vague grouping categories that exist only to hold children',
+  '',
+  'Strict formatting rules:',
+  '- Your response must begin with # and contain NOTHING else. No preamble, no commentary.',
+  '- Do NOT use bold (**), italic (*), or any inline formatting. Plain text only.',
+  '- Produce 5-7 top-level concepts with 2-4 sub-concepts each. Maximum 3 levels deep.',
+  '- Do NOT exceed 25 total nodes. Be selective, not exhaustive.',
+  '- Node descriptions: 10 words max. Most nodes need no description at all.',
+  '- Tags: [Hard] for mathematically dense, [Important] for foundational, [Low Priority] for tangential.',
+  '',
+  'Relationships should reflect logical dependency:',
+  '- "A requires B" (prerequisite)',
+  '- "A is built using B" (construction)',
+  '- "A is a type of B" (specialization)',
+  '',
+  'Do NOT mirror the paper\'s section order or headings.',
+  '',
+  'Output valid markdown using headings (# ## ###) and bullet points.',
 ].join('\n')
 
 const MERGE_SYSTEM = [
-  'You are an expert at synthesizing knowledge from multiple documents into a unified mind map.',
-  'Given multiple document mind maps, merge them into a single coherent mind map that:',
+  'You are an expert at synthesizing knowledge from multiple academic documents into a unified concept map.',
   '',
-  '1. Identifies common themes and groups them together',
-  '2. Preserves unique concepts from each document',
-  '3. Creates cross-document connections where concepts relate',
-  '4. Uses a clear hierarchy with the main topic as the root',
-  '5. Adds [Cross-Doc] tag to nodes that connect multiple documents',
+  'Given individual concept maps from several documents, merge them into a single coherent map.',
   '',
-  'Output ONLY valid markdown in mind-map hierarchy format.',
+  'Rules:',
+  '- Find the 3-5 highest-level themes that span the documents. These become your top-level nodes.',
+  '- When two documents cover the same concept (e.g., both discuss regularization), merge them into one node, not two separate ones.',
+  '- Preserve concepts that are unique to a single document but place them under the most relevant shared theme.',
+  '- Tag nodes that connect ideas from multiple documents with [Cross-Doc].',
+  '- Do NOT organize by document. Never create a branch called "From Document A."',
+  '',
+  'Output valid markdown using headings (# ## ###) and bullet points.',
 ].join('\n')
-
 
 
 // ── Prompt builders (used by agentOrchestrator) ─────────────────────
