@@ -2,7 +2,12 @@ import { useEffect, useRef, useState } from 'react'
 import { Markmap, loadCSS, loadJS, globalCSS } from 'markmap-view'
 import * as markmapView from 'markmap-view'
 import { Transformer } from 'markmap-lib'
-import type { MindMapViewerProps } from '../types'
+export interface MindMapViewerProps {
+  markdown: string
+  onExportPng?: () => void
+  onExportSvg?: () => void
+  onExportMarkdown?: () => void
+}
 
 function injectMarkmapStyles() {
   if (document.getElementById('markmap-global-css')) return
@@ -17,7 +22,7 @@ let assetsLoaded = false
 async function ensureAssets(transformer: Transformer, features: unknown) {
   if (assetsLoaded) return
   injectMarkmapStyles()
-  const assets = transformer.getUsedAssets(features)
+  const assets = transformer.getUsedAssets(features as any)
   if (assets?.styles?.length) {
     await loadCSS(assets.styles)
   }
@@ -46,7 +51,6 @@ export default function MindMapViewer({
 
     setError(null)
     let cancelled = false
-    const container = containerRef.current
     const transformer = new Transformer()
 
     try {
