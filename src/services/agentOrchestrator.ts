@@ -78,8 +78,7 @@ export type ProgressCallback = (tasks: AgentTask[]) => void
  */
 export async function processDocumentsWithAgents(
   documents: PDFDocument[],
-  onProgress?: ProgressCallback,
-  userPrompt?: string
+  onProgress?: ProgressCallback
 ): Promise<{ markdown: string; tasks: AgentTask[] }> {
   // Check which providers are actually available
   const available = await getAvailableProviders()
@@ -107,7 +106,7 @@ export async function processDocumentsWithAgents(
 
       try {
         const [provider, model] = task.model.split('/')
-        const messages = buildExtractionPrompt(task.input, documents[idx].name, userPrompt)
+        const messages = buildExtractionPrompt(task.input, documents[idx].name)
         const response = await callLLM({
           provider: provider as any,
           model,
@@ -158,7 +157,7 @@ export async function processDocumentsWithAgents(
   onProgress?.(allTasks)
 
   try {
-    const mergeMessages = buildMergePrompt(markdowns, docNames, userPrompt)
+    const mergeMessages = buildMergePrompt(markdowns, docNames)
     const mergeResponse = await callLLM({
       provider: 'openai',
       model: 'gpt-5.2',

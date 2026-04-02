@@ -50,10 +50,7 @@ export async function callLLM(options: LLMCallOptions): Promise<LLMResponse> {
 
 /* ── Prompt templates ── */
 
-export function buildExtractionPrompt(documentText: string, documentName: string, userPrompt?: string): LLMMessage[] {
-  const extraInstruction = userPrompt
-    ? `\n\nAdditional instructions from the user: ${userPrompt}`
-    : ''
+export function buildExtractionPrompt(documentText: string, documentName: string): LLMMessage[] {
   return [
     {
       role: 'system',
@@ -63,7 +60,7 @@ Output ONLY valid markdown in a mind-map hierarchy using headings (# ## ### etc.
 Include tags like [Hard], [Important], or [Low Priority] where appropriate.
 Add brief descriptions as sub-bullets where they add value.
 Group related concepts under common parent headings.
-Identify cross-cutting themes that connect different sections.${extraInstruction}`,
+Identify cross-cutting themes that connect different sections.`,
     },
     {
       role: 'user',
@@ -72,14 +69,10 @@ Identify cross-cutting themes that connect different sections.${extraInstruction
   ]
 }
 
-export function buildMergePrompt(markdowns: string[], docNames: string[], userPrompt?: string): LLMMessage[] {
+export function buildMergePrompt(markdowns: string[], docNames: string[]): LLMMessage[] {
   const docs = markdowns
     .map((md, i) => `--- Document: ${docNames[i]} ---\n${md}`)
     .join('\n\n')
-
-  const extraInstruction = userPrompt
-    ? `\n\nAdditional instructions from the user: ${userPrompt}`
-    : ''
 
   return [
     {
@@ -91,7 +84,7 @@ Given multiple document mind maps, merge them into a single coherent mind map th
 3. Creates cross-document connections where concepts relate
 4. Uses a clear hierarchy with the main topic as the root
 5. Adds [Cross-Doc] tag to nodes that connect multiple documents
-Output ONLY valid markdown in mind-map hierarchy format.${extraInstruction}`,
+Output ONLY valid markdown in mind-map hierarchy format.`,
     },
     {
       role: 'user',
