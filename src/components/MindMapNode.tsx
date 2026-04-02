@@ -18,6 +18,47 @@ function TagBadge({ tag }: { tag: NodeTag }) {
   )
 }
 
+/* ── Collapse toggle button ── */
+function CollapseToggle({
+  nodeId,
+  isCollapsed,
+  childCount,
+}: {
+  nodeId: string
+  isCollapsed: boolean
+  childCount?: number
+}) {
+  const handleClick = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation()
+      window.dispatchEvent(
+        new CustomEvent('mindmap-node-collapse-toggle', { detail: { nodeId } })
+      )
+    },
+    [nodeId]
+  )
+
+  return (
+    <button
+      onClick={handleClick}
+      onMouseDown={(e) => e.stopPropagation()}
+      className={`
+        absolute -right-5 top-1/2 -translate-y-1/2 z-10
+        w-4 h-4 rounded-full border-2 flex items-center justify-center
+        text-[8px] font-bold transition-all duration-200 nodrag nopan
+        ${isCollapsed
+          ? 'bg-blue-500 border-blue-600 text-white shadow-md hover:bg-blue-600 scale-110'
+          : 'bg-white border-slate-300 text-slate-500 hover:bg-slate-100 hover:border-slate-400'
+        }
+      `}
+      title={isCollapsed ? `Expand (${childCount ?? ''} hidden)` : 'Collapse subtree'}
+      style={{ right: '-18px' }}
+    >
+      {isCollapsed ? '▶' : '▼'}
+    </button>
+  )
+}
+
 /* ── Inline editable label ── */
 function EditableLabel({
   value,
@@ -119,7 +160,7 @@ export const RootNode = memo(function RootNode({ data, id }: NodeProps) {
   )
 
   return (
-    <div className={`root-node px-5 py-3 rounded-xl bg-slate-800 text-white shadow-lg border-2 
+    <div className={`root-node relative px-5 py-3 rounded-xl bg-slate-800 text-white shadow-lg border-2 
       ${d.isHighlighted ? 'ring-4 ring-blue-400 animate-pulse-highlight' : 'border-slate-700'}
       cursor-pointer min-w-[120px] max-w-[260px] text-center`}
     >
@@ -136,6 +177,9 @@ export const RootNode = memo(function RootNode({ data, id }: NodeProps) {
         </div>
       )}
       <Handle type="source" position={Position.Right} className="!bg-blue-400 !w-3 !h-3 !-right-1.5" />
+      {d.hasChildren && (
+        <CollapseToggle nodeId={id} isCollapsed={!!d.isCollapsed} />
+      )}
     </div>
   )
 })
@@ -155,27 +199,41 @@ export const BranchNode = memo(function BranchNode({ data, id }: NodeProps) {
   )
 
   return (
-    <div className={`branch-node px-4 py-2.5 rounded-lg bg-white shadow-md border-2 
+    <div className={`branch-node relative px-4 py-2.5 rounded-lg bg-white shadow-md border-2 
       ${d.isHighlighted ? 'ring-4 ring-blue-400 animate-pulse-highlight border-blue-400' : 'border-slate-200'}
-      cursor-pointer min-w-[100px] max-w-[260px]`}
+      ${d.isCollapsed ? 'border-blue-300 bg-blue-50' : ''}
+      cursor-pointer min-w-[100px] max-w-[260px] transition-colors duration-200`}
     >
       <Handle type="target" position={Position.Left} className="!bg-blue-400 !w-3 !h-3 !-left-1.5" />
-      <EditableLabel
-        value={d.label}
-        onCommit={handleLabelChange}
-        className="font-semibold text-[13px] text-slate-800 leading-tight"
-        inputClassName="text-[13px] font-semibold"
-        autoEdit={isNew}
-      />
-      {d.description && (
-        <div className="text-[11px] text-slate-500 mt-1 leading-snug line-clamp-2">{d.description}</div>
-      )}
-      {d.tags && d.tags.length > 0 && (
-        <div className="flex gap-1 mt-1 flex-wrap">
-          {d.tags.map((t) => <TagBadge key={t} tag={t} />)}
+      <div className="flex items-start gap-1">
+        <div className="flex-1 min-w-0">
+          <EditableLabel
+            value={d.label}
+            onCommit={handleLabelChange}
+            className="font-semibold text-[13px] text-slate-800 leading-tight"
+            inputClassName="text-[13px] font-semibold"
+            autoEdit={isNew}
+          />
+          {d.description && (
+            <div className="text-[11px] text-slate-500 mt-1 leading-snug line-clamp-2">{d.description}</div>
+          )}
+          {d.tags && d.tags.length > 0 && (
+            <div className="flex gap-1 mt-1 flex-wrap">
+              {d.tags.map((t) => <TagBadge key={t} tag={t} />)}
+            </div>
+          )}
+          {d.isCollapsed && (
+            <div className="text-[10px] text-blue-500 font-medium mt-0.5">
+              {/* collapsed indicator */}
+              ··· subtree hidden
+            </div>
+          )}
         </div>
-      )}
+      </div>
       <Handle type="source" position={Position.Right} className="!bg-blue-400 !w-3 !h-3 !-right-1.5" />
+      {d.hasChildren && (
+        <CollapseToggle nodeId={id} isCollapsed={!!d.isCollapsed} />
+      )}
     </div>
   )
 })
@@ -194,9 +252,10 @@ export const LeafNode = memo(function LeafNode({ data, id }: NodeProps) {
   )
 
   return (
-    <div className={`leaf-node px-3 py-2 rounded-lg bg-white shadow-sm border 
+    <div className={`leaf-node relative px-3 py-2 rounded-lg bg-white shadow-sm border 
       ${d.isHighlighted ? 'ring-4 ring-blue-400 animate-pulse-highlight border-blue-400' : 'border-slate-200'}
-      cursor-pointer min-w-[80px] max-w-[260px]`}
+      ${d.isCollapsed ? 'border-blue-300 bg-blue-50' : ''}
+      cursor-pointer min-w-[80px] max-w-[260px] transition-colors duration-200`}
     >
       <Handle type="target" position={Position.Left} className="!bg-blue-400 !w-2.5 !h-2.5 !-left-1" />
       <div className="flex items-center gap-1.5 flex-wrap">
@@ -211,7 +270,13 @@ export const LeafNode = memo(function LeafNode({ data, id }: NodeProps) {
       {d.description && (
         <div className="text-[10px] text-slate-400 mt-0.5 leading-snug line-clamp-2">{d.description}</div>
       )}
+      {d.isCollapsed && (
+        <div className="text-[10px] text-blue-500 font-medium mt-0.5">··· subtree hidden</div>
+      )}
       <Handle type="source" position={Position.Right} className="!bg-blue-400 !w-2.5 !h-2.5 !-right-1" />
+      {d.hasChildren && (
+        <CollapseToggle nodeId={id} isCollapsed={!!d.isCollapsed} />
+      )}
     </div>
   )
 })
