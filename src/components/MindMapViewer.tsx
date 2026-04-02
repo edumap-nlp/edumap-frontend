@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { Markmap, loadCSS, loadJS, globalCSS } from 'markmap-view'
 import * as markmapView from 'markmap-view'
 import { Transformer } from 'markmap-lib'
+import type { IFeatures } from 'markmap-lib'
+import type { MindMapViewerProps } from '../types'
 export interface MindMapViewerProps {
   markdown: string
   onExportPng?: () => void
@@ -19,7 +21,7 @@ function injectMarkmapStyles() {
 
 let assetsLoaded = false
 
-async function ensureAssets(transformer: Transformer, features: unknown) {
+async function ensureAssets(transformer: Transformer, features: IFeatures) {
   if (assetsLoaded) return
   injectMarkmapStyles()
   const assets = transformer.getUsedAssets(features as any)
@@ -144,21 +146,21 @@ export default function MindMapViewer({
         <div className="flex gap-2">
           <button
             type="button"
-            onClick={onExportPng}
+            onClick={() => onExportPng?.()}
             className="px-4 py-2 rounded-lg border border-surface-border text-slate-700 text-sm font-medium hover:bg-slate-50 transition-colors"
           >
             PNG
           </button>
           <button
             type="button"
-            onClick={onExportSvg}
+            onClick={() => onExportSvg?.()}
             className="px-4 py-2 rounded-lg border border-surface-border text-slate-700 text-sm font-medium hover:bg-slate-50 transition-colors"
           >
             SVG
           </button>
           <button
             type="button"
-            onClick={onExportMarkdown}
+            onClick={() => onExportMarkdown?.()}
             className="px-4 py-2 rounded-lg border border-surface-border text-slate-700 text-sm font-medium hover:bg-slate-50 transition-colors"
           >
             Markdown

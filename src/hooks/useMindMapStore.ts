@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import type { MindMapNode, MindMapEdge, PDFDocument, AgentTask } from '../types'
-import { markdownToReactFlow, reactFlowToMarkdown, insertExpansionInMarkdown } from '../services/mindmapTransformer'
+import { markdownToReactFlow, reactFlowToMarkdown } from '../services/mindmapTransformer'
 
 interface MindMapStore {
   // State
@@ -24,7 +24,6 @@ interface MindMapStore {
   setIsProcessing: (v: boolean) => void
   highlightNode: (id: string | null) => void
   setShowUploadModal: (v: boolean) => void
-  expandNodeInGraph: (nodeId: string, expansionMd: string) => void
   addManualEdge: (edge: MindMapEdge) => void
   updateNodeLabel: (nodeId: string, newLabel: string) => void
 }
@@ -68,13 +67,6 @@ export const useMindMapStore = create<MindMapStore>((set, get) => ({
   highlightNode: (id) => set({ highlightedNodeId: id }),
 
   setShowUploadModal: (v) => set({ showUploadModal: v }),
-
-  expandNodeInGraph: (nodeId, expansionMd) => {
-    const { markdown, nodes } = get()
-    const newMd = insertExpansionInMarkdown(markdown, nodeId, expansionMd, nodes)
-    const { nodes: newNodes, edges: newEdges } = markdownToReactFlow(newMd)
-    set({ markdown: newMd, nodes: newNodes, edges: newEdges })
-  },
 
   addManualEdge: (edge) =>
     set((state) => ({ edges: [...state.edges, edge] })),

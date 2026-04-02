@@ -3,9 +3,9 @@ import MarkdownEditorPanel from '../components/MarkdownEditorPanel'
 import MindMapCanvas from '../components/MindMapCanvas'
 import PdfUploadModal from '../components/PdfUploadModal'
 import { useMindMapStore } from '../hooks/useMindMapStore'
-import { processDocumentsWithAgents, expandNode } from '../services/agentOrchestrator'
+import { processDocumentsWithAgents } from '../services/agentOrchestrator'
 import { SAMPLE_MARKDOWN } from '../data/sampleMarkdown'
-import type { PDFDocument, MindMapNode, MindMapEdge, MindMapNodeData } from '../types'
+import type { PDFDocument, MindMapNode, MindMapEdge } from '../types'
 
 export default function MainEditor() {
   const store = useMindMapStore()
@@ -82,55 +82,11 @@ export default function MainEditor() {
     [store]
   )
 
-  // Handle double-click expand on a node
-  const handleExpandNode = useCallback(
-    async (nodeId: string) => {
-      const node = store.nodes.find((n) => n.id === nodeId)
-      if (!node) return
-
-      const data = node.data as MindMapNodeData
-      store.setIsProcessing(true)
-
-      try {
-        const expansion = await expandNode(data.label, data.description ?? '', store.markdown)
-        store.expandNodeInGraph(nodeId, expansion)
-      } catch (err) {
-        console.error('Node expansion failed:', err)
-        // Fallback: add placeholder sub-concepts
-        const placeholders = `- ${data.label} Detail 1 [New]\n- ${data.label} Detail 2 [New]\n- ${data.label} Detail 3 [New]`
-        store.expandNodeInGraph(nodeId, placeholders)
-      } finally {
-        store.setIsProcessing(false)
-      }
-    },
-    [store]
-  )
-
-  // Handle node label change → update store + trigger LLM concept generation
+  // Handle node label change → sync label into markdown (no LLM)
   const handleNodeLabelChange = useCallback(
-    async (nodeId: string, newLabel: string) => {
-      // Update the label in store
+    (nodeId: string, newLabel: string) => {
       store.updateNodeLabel(nodeId, newLabel)
-
-      // If label is non-trivial, trigger LLM to generate sub-concepts
-      if (newLabel.length < 3 || newLabel === 'New Concept') return
-
-      store.setIsProcessing(true)
-      try {
-        const expansion = await expandNode(newLabel, '', store.markdown)
-        store.expandNodeInGraph(nodeId, expansion)
-      } catch (err) {
-        console.error('Concept generation from label failed:', err)
-        // Fallback: add placeholder sub-concepts
-        const placeholders = [
-          `- ${newLabel}: Key Aspect 1 [New]`,
-          `- ${newLabel}: Key Aspect 2 [New]`,
-          `- ${newLabel}: Key Aspect 3 [New]`,
-        ].join('\n')
-        store.expandNodeInGraph(nodeId, placeholders)
-      } finally {
-        store.setIsProcessing(false)
-      }
+      store.updateFromGraph()
     },
     [store]
   )
@@ -206,7 +162,6 @@ export default function MainEditor() {
                 onNodesChange={handleNodesChange}
                 onEdgesChange={handleEdgesChange}
                 onNodeClick={handleNodeClickFromMap}
-                onExpandNode={handleExpandNode}
                 onNodeLabelChange={handleNodeLabelChange}
                 highlightedNodeId={store.highlightedNodeId}
                 onExportPng={handleExportPng}
@@ -217,7 +172,7 @@ export default function MainEditor() {
                   <div className="text-5xl mb-3">🧠</div>
                   <p className="font-medium">Upload PDFs or edit markdown to generate a mind map</p>
                   <p className="text-sm mt-1 text-slate-400">
-                    Drag nodes to rearrange · Double-click to expand · Draw connections between nodes
+                    Drag nodes to rearrange · Draw connections between nodes
                   </p>
                 </div>
               </div>

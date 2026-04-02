@@ -102,7 +102,6 @@ function MindMapCanvasInner({
   onNodesChange: _onNodesChangeExternal,
   onEdgesChange: onEdgesChangeExternal,
   onNodeClick: onNodeClickExternal,
-  onExpandNode,
   onNodeLabelChange,
   highlightedNodeId,
   onExportPng,
@@ -279,13 +278,7 @@ function MindMapCanvasInner({
     [onNodeClickExternal]
   )
 
-  const handleNodeDoubleClick: NodeMouseHandler = useCallback(
-    (_event, node) => {
-      onExpandNode?.(node.id)
-    },
-    [onExpandNode]
-  )
-
+  // Delete selected nodes/edges with Delete or Backspace key
   const onKeyDown = useCallback(
     (event: React.KeyboardEvent) => {
       if (event.key === 'Delete' || event.key === 'Backspace') {
@@ -396,7 +389,6 @@ function MindMapCanvasInner({
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         onNodeClick={handleNodeClick}
-        onNodeDoubleClick={handleNodeDoubleClick}
         onPaneClick={onPaneClick}
         onDoubleClick={onPaneDoubleClick}
         nodeTypes={nodeTypes}
