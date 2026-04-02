@@ -1,0 +1,21 @@
+{
+  "pdf": "data/sepsis_definition.pdf",
+  "output_markdown": "output/sepsis_definition/sepsis_definition_bl_multimodal.md",
+  "counts": {
+    "pages": 8,
+    "text_blocks": 16,
+    "tables": 20,
+    "images": 5,
+    "image_captions": 5,
+    "image_ocr": 4,
+    "formulas_images": 0
+  },
+  "num_chunks": 16,
+  "token_stats": {
+    "input_tokens": 13165,
+    "output_tokens": 2439
+  },
+  "estimated_cost_usd": 0.00343815,
+  "timing_seconds": 81.3107397556305,
+  "device": "mps"
+}

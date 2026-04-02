@@ -1,0 +1,4 @@
+Method,Conceptual Accuracy,Coverage of Key Ideas,Hierarchical Organization,Usefulness for Studying,Average Score
+Baseline (TF-IDF + KMeans),2,2,1,1,1.50
+NotebookLM,4,4,5,5,4.50
+Multimodal Pipeline,4.5,5,5,4,4.75
