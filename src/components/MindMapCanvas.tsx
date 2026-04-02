@@ -64,8 +64,7 @@ function computeInitialCollapsed(
   const childMap = buildChildMap(edges)
   const collapsed = new Set<string>()
   for (const n of nodes) {
-    const depth = (n.data as MindMapNodeData).depth
-    if (depth >= MAX_VISIBLE_DEPTH && childMap.has(n.id)) {
+    if (childMap.has(n.id)) {
       collapsed.add(n.id)
     }
   }
