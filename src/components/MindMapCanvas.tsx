@@ -365,13 +365,12 @@ function MindMapCanvasInner({
   const handleCollapseAll = useCallback(() => {
     const toCollapse = new Set<string>()
     for (const n of nodes) {
-      const depth = depthMap.get(n.id) ?? 0
-      if (childMap.has(n.id) && depth >= MAX_VISIBLE_DEPTH) {
+      if (childMap.has(n.id)) {
         toCollapse.add(n.id)
       }
     }
     setCollapsedNodeIds(toCollapse)
-  }, [nodes, childMap, depthMap])
+  }, [nodes, childMap])
 
   const hiddenCount = hiddenIds.size
 
@@ -454,7 +453,7 @@ function MindMapCanvasInner({
           <button
             onClick={handleCollapseAll}
             className="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-700 text-xs font-medium hover:bg-slate-50 shadow-sm transition-colors"
-            title={`Collapse nodes beyond level ${MAX_VISIBLE_DEPTH}`}
+            title="Collapse all nodes to root"
           >
             ↕ Collapse All
           </button>
