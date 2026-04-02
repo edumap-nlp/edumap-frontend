@@ -5,7 +5,7 @@ import { extractMultiplePdfs } from '../services/pdfService'
 interface PdfUploadModalProps {
   isOpen: boolean
   onClose: () => void
-  onDocumentsReady: (docs: PDFDocument[]) => void
+  onDocumentsReady: (docs: PDFDocument[], prompt?: string) => void
 }
 
 export default function PdfUploadModal({ isOpen, onClose, onDocumentsReady }: PdfUploadModalProps) {
@@ -13,6 +13,7 @@ export default function PdfUploadModal({ isOpen, onClose, onDocumentsReady }: Pd
   const [isExtracting, setIsExtracting] = useState(false)
   const [progress, setProgress] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [userPrompt, setUserPrompt] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
 
   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -40,8 +41,9 @@ export default function PdfUploadModal({ isOpen, onClose, onDocumentsReady }: Pd
     try {
       const docs = await extractMultiplePdfs(files)
       setProgress('Text extraction complete!')
-      onDocumentsReady(docs)
+      onDocumentsReady(docs, userPrompt.trim() || undefined)
       setFiles([])
+      setUserPrompt('')
       onClose()
     } catch (err) {
       setError(`Extraction failed: ${err instanceof Error ? err.message : String(err)}`)
@@ -131,6 +133,36 @@ export default function PdfUploadModal({ isOpen, onClose, onDocumentsReady }: Pd
               ))}
             </div>
           )}
+
+          {/* Prompt */}
+          <div className="mt-4">
+            <label className="block text-xs font-medium text-slate-600 mb-1.5">
+              <span className="inline-flex items-center gap-1">
+                <span>✨</span> Custom instructions <span className="text-slate-400 font-normal">(optional)</span>
+              </span>
+            </label>
+            <div className="relative">
+              <textarea
+                value={userPrompt}
+                onChange={(e) => setUserPrompt(e.target.value)}
+                placeholder="e.g. Focus on optimization techniques and skip historical context. Highlight connections between topics."
+                rows={3}
+                className="w-full px-3 py-2.5 text-sm text-slate-700 placeholder-slate-400 bg-slate-50 border border-slate-200 rounded-xl resize-none outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all"
+              />
+              {userPrompt && (
+                <button
+                  onClick={() => setUserPrompt('')}
+                  className="absolute top-2 right-2 text-slate-300 hover:text-slate-500 transition-colors text-xs"
+                  title="Clear"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+            <p className="text-[11px] text-slate-400 mt-1">
+              The AI will use these instructions when building the mind map from your documents.
+            </p>
+          </div>
 
           {/* Progress */}
           {progress && (
