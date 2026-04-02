@@ -11,6 +11,8 @@ export interface MindMapNodeData extends Record<string, unknown> {
   sourceDocId?: string
   markdownLine?: number
   isHighlighted?: boolean
+  hasChildren?: boolean
+  isCollapsed?: boolean
 }
 
 export type MindMapNode = Node<MindMapNodeData>
