@@ -120,10 +120,22 @@
       On the pipeline side, a core problem was identified: the LLM tends to mirror the section structure of the input paper rather than reorganizing content by conceptual relationships. Through experimentation with different prompting strategies, this was traced to the model anchoring on section headings in the input text. Two directions are now being pursued to address this.
     </p>
     <p>
-      First, a multimodal extraction approach was explored. Each PDF page is rendered to a 150 DPI image using PyMuPDF, converted to Base64, and sent alongside an adaptive prompt to GPT-4o&#39;s vision model. Based on the paper type (for example, clinical studies versus machine learning papers), the model generates a structured Markdown summary with up to three heading levels. This approach handles main text, tables, and figures simultaneously, and initial results show that most core content is captured. However, the output exhibits hallucinations, context misalignment, and unreliable numeric extraction, particularly when reading values from tables.
+      First, an end-to-end multimodal extraction approach was explored. Each PDF page was rendered as a 150 DPI image using PyMuPDF, encoded in Base64, and sent to GPT-4o’s vision model along with an adaptive prompt. Based on the paper type (e.g., clinical studies vs. machine learning papers), the model generated a structured Markdown summary with up to three hierarchical levels. This approach enabled joint processing of text, tables, and figures, and initial results showed that most core textual content was captured. 
     </p>
     <p>
-      Second, a recursive generation approach was designed but not yet implemented. Rather than generating the full mind map in a single LLM call, the plan is to first extract top-level concepts, then expand each level into sub-concepts through subsequent calls, reaching four levels of depth. Preprocessing steps such as stripping section headers and shuffling paragraph order are also planned, with the goal of forcing the model to cluster ideas by meaning rather than by the paper&#39;s original organization.
+      However, this vision-based approach struggled to reliably extract structured elements, particularly tables. The output often exhibited hallucinations, context misalignment, and inaccurate numeric extraction, indicating limitations in directly relying on end-to-end multimodal reasoning. 
+    </p>
+    <p>
+      To address these issues, a refined modular pipeline was introduced, separating content extraction from semantic understanding. Layout-aware parsing was used to identify text, tables, and figure regions, followed by OCR and image captioning to explicitly capture visual content. The extracted information was then merged into a unified representation, segmented into chunks, and processed by the LLM to generate hierarchical summaries. This modular design improved both the completeness and reliability of multimodal extraction, especially for structured data such as tables.
+    </p>
+    <p>
+      Second, a recursive generation approach was designed but not yet implemented. Rather than generating the full mind map in a single LLM call, the proposed method decomposes the task into multiple steps: first extracting top-level concepts, then progressively expanding each node into sub-concepts through subsequent calls, reaching up to four levels of depth.
+    </p>
+    <p>
+      In addition, preprocessing strategies such as removing section headers and shuffling paragraph order are planned to reduce the model’s reliance on the original document structure, encouraging it to cluster ideas based on semantic relationships rather than predefined sections.
+    </p>
+    <p>
+      At the same time, the multimodal pipeline is expected to be integrated into EduMap as a core component in future iterations. This integration, together with the recursive generation strategy, is intended to improve both the structural organization and the completeness of the generated mind maps.
     </p>
 
     <hr>
@@ -135,7 +147,7 @@
     <p>The four systems are:</p>
     <ol>
       <li><strong>TF-IDF + KMeans (classical baseline):</strong> A non-LLM pipeline using TF-IDF vectorization, KMeans clustering, and RAKE-based keyphrase extraction to produce cluster titles and representative sentences.</li>
-      <li><strong>Multimodal pipeline:</strong> A layout-aware approach that extracts text, tables, and embedded images (via BLIP captioning and Tesseract OCR), then feeds the combined content through GPT-4o-mini for chunked summarization and final consolidation.</li>
+      <li><strong>Multimodal pipeline:</strong> A modular, layout-aware pipeline that separates content extraction from semantic processing. Text, tables, and figures are first identified through layout parsing, with OCR and image captioning applied to recover structured and visual information. The extracted content is then unified and processed by GPT-4o-mini for chunked summarization and hierarchical consolidation. </li>
       <li><strong>EduMap (current system):</strong> The deployed pipeline using client-side PDF text extraction and an LLM proxy server supporting multiple providers (OpenAI, Anthropic, Google Gemini) to generate a hierarchical mind map with difficulty and priority tags.</li>
       <li><strong>NotebookLM:</strong> The same PDF was uploaded directly to Google&#39;s NotebookLM product, and its generated summary output was evaluated using the same rubric.</li>
     </ol>
@@ -233,7 +245,7 @@
     <h3 id="remainder-semester">Plan for remainder of semester</h3>
     <ul>
       <li><strong>Week 1 (Apr 7):</strong> Implement recursive generation (four levels deep: first pass extracts top-level concepts, then each level is expanded into sub-concepts by subsequent LLM calls). Conduct HCI literature review on mind map usability and evaluation metrics.</li>
-      <li><strong>Week 2 (Apr 14):</strong> Run evaluation against baseline (for example, BERTScore, human ratings). Implement node limit controls. Further explore multimodal extraction with GPT-4o vision.</li>
+      <li><strong>Week 2 (Apr 14):</strong> Run evaluation against baseline (e.g., BERTScore, human ratings). Implement node limit controls. Further explore multimodal extraction with GPT-4o vision, and begin integrating the multimodal pipeline into EduMap to improve the completeness and reliability of extracted content.</li>
       <li><strong>Week 3 (Apr 21):</strong> Explore chatbot feature for interactive remapping. User testing if possible.</li>
       <li><strong>Week 4 (Apr 28):</strong> Poster preparation.</li>
       <li><strong>Week 5 (May 5):</strong> Final report writing and submission.</li>
