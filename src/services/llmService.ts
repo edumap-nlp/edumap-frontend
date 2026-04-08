@@ -72,6 +72,90 @@ export async function callWithFallback(
   throw new Error('All providers exhausted')
 }
 
+// ── Heading-level guards ────────────────────────────────────────────
+
+/**
+ * Returns the heading depth of a markdown line (1 for #, 2 for ##, etc.)
+ * or 0 if the line is not a heading.
+ */
+function headingDepth(line: string): number {
+  const match = line.match(/^(#{1,6})\s/)
+  return match ? match[1].length : 0
+}
+
+/**
+ * Shifts all headings in a block so the shallowest heading sits at `targetMin`.
+ *
+ * Example: if the LLM returns ## and ### but we need ### and ####,
+ * the shallowest is 2, target is 3, so every heading shifts +1.
+ */
+function shiftHeadings(markdown: string, targetMin: number): string {
+  const lines = markdown.split('\n')
+  let shallowest = Infinity
+
+  for (const line of lines) {
+    const depth = headingDepth(line)
+    if (depth > 0 && depth < shallowest) shallowest = depth
+  }
+
+  if (shallowest === Infinity || shallowest === targetMin) return markdown
+
+  const delta = targetMin - shallowest
+
+  return lines
+    .map((line) => {
+      const depth = headingDepth(line)
+      if (depth === 0) return line
+      const newDepth = Math.min(depth + delta, 6) // cap at h6
+      return '#'.repeat(newDepth) + line.slice(depth)
+    })
+    .join('\n')
+}
+
+/**
+ * Sanitize Pass 2 (branch concepts) output:
+ * - Keep only ## headings and their one-line bullet descriptions
+ * - Strip any ###/#### lines the LLM may have added
+ */
+export function sanitizeBranchOutput(markdown: string): string {
+  const lines = markdown.split('\n')
+  const cleaned: string[] = []
+
+  for (const line of lines) {
+    const depth = headingDepth(line)
+
+    // Keep ## headings (depth === 2)
+    if (depth === 2) {
+      cleaned.push(line)
+      continue
+    }
+
+    // Keep non-heading lines (bullet descriptions, blank lines)
+    // but only if they follow a ## heading
+    if (depth === 0 && cleaned.length > 0) {
+      cleaned.push(line)
+      continue
+    }
+
+    // Drop anything else (###, ####, or headings at wrong level)
+    // Log it so you can see when the LLM misbehaves
+    if (depth > 0) {
+      console.warn(`[sanitizeBranchOutput] Stripped unexpected heading: "${line}"`)
+    }
+  }
+
+  return cleaned.join('\n')
+}
+
+/**
+ * Sanitize Pass 3 (expansion) output:
+ * - Shift headings so the shallowest level is ### (depth 3)
+ * - Cap at #### (depth 4)
+ */
+export function sanitizeExpansionOutput(markdown: string): string {
+  return shiftHeadings(markdown, 3)
+}
+
 // ── Parsers ─────────────────────────────────────────────────────────
 
 export function parseRootTopic(markdown: string): string | null {
@@ -91,12 +175,22 @@ export function assembleRecursiveMarkdown(
   branchMarkdown: string,
   expansions: Map<string, string>,
 ): string {
+  // Guard 1: strip unexpected headings from branch output
+  const cleanBranches = sanitizeBranchOutput(branchMarkdown)
+
+  // Guard 2: shift expansion headings to ### minimum
+  const cleanExpansions = new Map<string, string>()
+  for (const [key, value] of expansions) {
+    cleanExpansions.set(key, sanitizeExpansionOutput(value))
+  }
+
   const assembled: string[] = [`# ${rootTopic}`, '']
 
-  for (const line of branchMarkdown.split('\n')) {
+  for (const line of cleanBranches.split('\n')) {
     assembled.push(line)
     if (/^## /.test(line) && !/^### /.test(line)) {
-      const expansion = expansions.get(line.replace(/^## /, '').trim())
+      const heading = line.replace(/^## /, '').trim()
+      const expansion = cleanExpansions.get(heading)
       if (expansion) {
         assembled.push(expansion.trim(), '')
       }
