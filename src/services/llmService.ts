@@ -1,8 +1,19 @@
 import type { LLMProvider, ProviderStatus } from '../types'
-import { PROVIDER_CHAIN } from '../services/agentOrchestrator'
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://localhost:3001/api'
 const MAX_EXTRACT_CHARS = 200_000
+
+// [EduMap fix] 2026-04-22 (post-merge): Moved PROVIDER_CHAIN from
+// agentOrchestrator.ts into llmService.ts because Shaun's PR #6 had
+// `llmService` import PROVIDER_CHAIN from `agentOrchestrator`, creating a
+// circular dependency (orchestrator imports most of what it needs from this
+// file). Keeping the chain next to `callWithFallback` — its sole consumer
+// here — and re-exporting for the orchestrator breaks the cycle.
+export const PROVIDER_CHAIN: { provider: LLMProvider; model: string }[] = [
+  { provider: 'google', model: 'gemini-2.5-flash' },
+  { provider: 'openai', model: 'gpt-5.2' },
+  { provider: 'anthropic', model: 'claude-sonnet-4.6' },
+]
 
 // ── Types ───────────────────────────────────────────────────────────
 
@@ -380,9 +391,6 @@ export function sanitizeBranchOutput(markdown: string): string {
 }
 
 /**
- * Sanitize Pass 3 (expansion) output:
- * - Shift headings so the shallowest level is ### (depth 3)
- * - Cap at #### (depth 4)
  * [EduMap fix] 2026-04-22: Stage 1 of the two-stage pipeline.
  *
  * Asks the LLM for a flat numbered list of atomic concepts from the
@@ -438,8 +446,9 @@ export function buildOrganizePrompt(
 }
 
 /**
- * Messages for merging several per-document mind maps into one markdown tree.
- * `markdowns` / `docNames` must align by index.
+ * Sanitize Pass 3 (expansion) output from the recursive extraction path:
+ * - Shift headings so the shallowest level is `###` (depth 3)
+ * - Cap at `######` (depth 6) via shiftHeadings' internal clamp
  */
 export function sanitizeExpansionOutput(markdown: string): string {
   return shiftHeadings(markdown, 3)
