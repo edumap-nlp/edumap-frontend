@@ -8,6 +8,7 @@ dist/
 .env
 .env.local
 .env.*.local
+OPENAI_API_KEY
 
 # IDE / Editor
 .vscode/
@@ -30,7 +31,6 @@ npm-debug.log*
 
 # Coverage
 coverage/
+
+# Agent / LLM assistant instruction files
 AGENTS.md
-
-
-OPENAI_API_KEY
