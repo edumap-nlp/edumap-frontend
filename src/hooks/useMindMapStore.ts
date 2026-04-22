@@ -86,6 +86,19 @@ export const useMindMapStore = create<MindMapStore>((set, get) => ({
 
   updateFromMarkdown: (md) => {
     const { nodes, edges } = markdownToReactFlow(md)
+    // [EduMap debug] 2026-04-22: Temporary debug hook so we can inspect the
+    // LLM's raw markdown and the parsed graph from the browser console when a
+    // user reports sidebar/mindmap divergence. Just type
+    //   copy(window.__edumapDebug.markdown)
+    // in DevTools to grab the current markdown; `nodes` / `edges` are there
+    // too for poking at the graph shape. Guarded to keep prod bundles clean.
+    if (import.meta.env.DEV && typeof window !== 'undefined') {
+      ;(window as unknown as { __edumapDebug?: unknown }).__edumapDebug = {
+        markdown: md,
+        nodes,
+        edges,
+      }
+    }
     set({
       markdown: md,
       nodes,

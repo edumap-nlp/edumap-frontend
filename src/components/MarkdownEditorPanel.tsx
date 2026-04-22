@@ -114,26 +114,76 @@ export default function MarkdownEditorPanel({
     [collapsedNodeIds, childMap]
   )
 
-  // Build clickable node index from the mind map nodes, filtering out any
-  // item whose ancestor chain is collapsed. Parents keep a `hasChildren`
-  // flag so we can render a ▶/▼ triangle on them.
+  // [EduMap fix] 2026-04-22: Derive sidebar depth from an actual DFS over the
+  // graph instead of trusting `data.depth`. Rationale — when the LLM emits
+  // unusual markdown (e.g. `# Root` → `### Child` with no `##` in between,
+  // or deep-then-shallow-then-deep patterns), the stored depth is computed
+  // from the raw-vs-normalized heuristic in `parseMarkdownToNodes`. That
+  // heuristic usually matches the edge-based tree depth, but "usually" is
+  // not "always" — and the mind map's visible hierarchy is driven solely
+  // by the edges via dagre. Walking the edges here guarantees the sidebar's
+  // indent level for every node matches its actual ancestor count in the
+  // mind map. This also fixes the order to be a true parent-first DFS so
+  // the two views scroll in lockstep.
   const nodeIndex = useMemo<NodeIndexItem[]>(() => {
-    if (!nodes) return []
-    return nodes
-      .filter((n) => !hiddenIds.has(n.id))
-      .map((n) => {
-        const data = n.data as MindMapNodeData
-        return {
-          nodeId: n.id,
-          label: data.label,
-          depth: data.depth,
-          tags: data.tags ?? [],
-          description: data.description,
-          hasChildren: childMap.has(n.id),
-          isCollapsed: collapsedNodeIds.has(n.id),
-        }
+    if (!nodes || nodes.length === 0) return []
+
+    const parentSet = new Set<string>()
+    for (const e of edges) parentSet.add(e.target)
+    const nodeMap = new Map(nodes.map((n) => [n.id, n]))
+
+    const items: NodeIndexItem[] = []
+    const visited = new Set<string>()
+
+    const visit = (nodeId: string, depth: number) => {
+      if (visited.has(nodeId)) return // guard against accidental cycles
+      visited.add(nodeId)
+      if (hiddenIds.has(nodeId)) return
+
+      const n = nodeMap.get(nodeId)
+      if (!n) return
+      const data = n.data as MindMapNodeData
+      const children = childMap.get(nodeId) ?? []
+
+      // [EduMap fix] 2026-04-22: A node counts as "having children" for
+      // the purpose of showing the collapse triangle if EITHER it has
+      // real edge-children OR it has a plain-text description hanging
+      // off it. Rationale — the LLM's current output puts a one-line
+      // description under every ### heading, which the parser captures
+      // into `data.description`. Yana wants those lines to live in the
+      // outline and be hideable via the same triangle. Without the
+      // description-check, a `###` with a description but no grand-
+      // children wouldn't get a triangle and the user couldn't hide
+      // the description row.
+      const hasDescription = !!data.description
+      items.push({
+        nodeId: n.id,
+        label: data.label,
+        depth,
+        tags: data.tags ?? [],
+        description: data.description,
+        hasChildren: children.length > 0 || hasDescription,
+        isCollapsed: collapsedNodeIds.has(n.id),
       })
-  }, [nodes, hiddenIds, childMap, collapsedNodeIds])
+
+      for (const c of children) visit(c, depth + 1)
+    }
+
+    // Roots: nodes with no incoming edge. Preserve the document order they
+    // appear in `nodes` so the sidebar reflects the same top-to-bottom
+    // reading sequence as the markdown source.
+    for (const n of nodes) {
+      if (!parentSet.has(n.id)) visit(n.id, 1)
+    }
+
+    // Any node the DFS missed (dangling edges, disconnected pieces) still
+    // gets rendered so nothing silently disappears from the outline.
+    for (const n of nodes) {
+      if (!visited.has(n.id)) visit(n.id, 1)
+    }
+
+    return items
+  }, [nodes, edges, hiddenIds, childMap, collapsedNodeIds])
 
   return (
     <section className="flex flex-col h-full border-r border-surface-border bg-panel min-w-[420px] max-w-[520px]">
@@ -216,60 +266,85 @@ export default function MarkdownEditorPanel({
             </div>
             <div className="py-1">
               {nodeIndex.map((item) => {
-                // Indent by depth. Reserve a fixed 16px gutter on the left for
-                // the triangle so leaf rows line up with their parent's label.
-                const indent = Math.min(item.depth, 5) * 12 + 8
+                // [EduMap fix] 2026-04-22: Indent by depth with a wider step
+                // (16px vs 12px) so the hierarchy is visually unambiguous
+                // when the LLM produces a shallow 3-level tree (the common
+                // case for uploaded PDFs). Cap raised from 5 to 7 so deeper
+                // outlines still step outward instead of crowding on one
+                // line.
+                const indent = Math.min(item.depth, 7) * 16 + 4
+                // [EduMap fix] 2026-04-22: The description row lives one
+                // level deeper than its parent heading in the outline,
+                // visually distinguished by italic muted text. We show it
+                // only when its heading is expanded — clicking the
+                // triangle on the heading hides/shows it like any other
+                // subtree.
+                const descIndent = Math.min(item.depth + 1, 7) * 16 + 4
+                const showDescription = !!item.description && !item.isCollapsed
                 return (
-                  <div
-                    key={item.nodeId}
-                    className={`w-full flex items-center gap-1 group transition-colors
-                      ${highlightedNodeId === item.nodeId ? 'bg-blue-100 border-l-2 border-blue-500' : 'border-l-2 border-transparent hover:bg-blue-50'}`}
-                    style={{ paddingLeft: `${indent}px` }}
-                  >
-                    {/* Triangle — only rendered on parents. Leaves get a
-                        16px-wide spacer so their labels align with parents'. */}
-                    {item.hasChildren ? (
+                  <div key={item.nodeId}>
+                    <div
+                      className={`w-full flex items-center gap-1 group transition-colors
+                        ${highlightedNodeId === item.nodeId ? 'bg-blue-100 border-l-2 border-blue-500' : 'border-l-2 border-transparent hover:bg-blue-50'}`}
+                      style={{ paddingLeft: `${indent}px` }}
+                    >
+                      {/* Triangle — rendered on nodes that have either
+                          edge-children or a description. Leaves get a
+                          16px-wide spacer so their labels still align. */}
+                      {item.hasChildren ? (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            toggleCollapsed(item.nodeId)
+                          }}
+                          className="w-4 h-4 shrink-0 flex items-center justify-center text-slate-400 hover:text-slate-700 text-[10px] leading-none"
+                          title={item.isCollapsed ? 'Expand' : 'Collapse'}
+                          aria-label={item.isCollapsed ? 'Expand' : 'Collapse'}
+                        >
+                          {item.isCollapsed ? '▶' : '▼'}
+                        </button>
+                      ) : (
+                        <span className="w-4 h-4 shrink-0" />
+                      )}
                       <button
                         type="button"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          toggleCollapsed(item.nodeId)
-                        }}
-                        className="w-4 h-4 shrink-0 flex items-center justify-center text-slate-400 hover:text-slate-700 text-[10px] leading-none"
-                        title={item.isCollapsed ? 'Expand' : 'Collapse'}
-                        aria-label={item.isCollapsed ? 'Expand' : 'Collapse'}
+                        onClick={() => onNodeClick?.(item.nodeId)}
+                        className="flex-1 text-left py-1.5 pr-4 flex items-center gap-2"
                       >
-                        {item.isCollapsed ? '▶' : '▼'}
+                        <span
+                          className={`text-[11px] leading-tight flex-1 ${
+                            item.depth <= 1
+                              ? 'font-bold text-slate-900'
+                              : item.depth <= 2
+                                ? 'font-semibold text-slate-800'
+                                : item.depth <= 3
+                                  ? 'font-medium text-slate-700'
+                                  : 'text-slate-600'
+                          }`}
+                        >
+                          {item.depth <= 1 ? '📋 ' : ''}
+                          {item.label}
+                        </span>
+                        {item.tags.map((tag) => (
+                          <TagBadgeSmall key={tag} tag={tag} />
+                        ))}
+                        <span className="text-blue-400 opacity-0 group-hover:opacity-100 text-[10px] transition-opacity shrink-0">
+                          ↗ locate
+                        </span>
                       </button>
-                    ) : (
-                      <span className="w-4 h-4 shrink-0" />
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => onNodeClick?.(item.nodeId)}
-                      className="flex-1 text-left py-1.5 pr-4 flex items-center gap-2"
-                    >
-                      <span
-                        className={`text-[11px] leading-tight flex-1 ${
-                          item.depth <= 1
-                            ? 'font-bold text-slate-900'
-                            : item.depth <= 2
-                              ? 'font-semibold text-slate-800'
-                              : item.depth <= 3
-                                ? 'font-medium text-slate-700'
-                                : 'text-slate-600'
-                        }`}
+                    </div>
+                    {showDescription && (
+                      <div
+                        className="w-full flex items-start gap-1 border-l-2 border-transparent"
+                        style={{ paddingLeft: `${descIndent}px` }}
                       >
-                        {item.depth <= 1 ? '📋 ' : ''}
-                        {item.label}
-                      </span>
-                      {item.tags.map((tag) => (
-                        <TagBadgeSmall key={tag} tag={tag} />
-                      ))}
-                      <span className="text-blue-400 opacity-0 group-hover:opacity-100 text-[10px] transition-opacity shrink-0">
-                        ↗ locate
-                      </span>
-                    </button>
+                        <span className="w-4 h-4 shrink-0" />
+                        <p className="flex-1 py-1 pr-4 text-[11px] leading-snug text-slate-500 italic">
+                          {item.description}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )
               })}

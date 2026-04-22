@@ -106,9 +106,16 @@ export const DEFAULT_LLM_CONFIGS: Record<string, LLMConfig> = {
 }
 
 /* ── Agent Orchestration ── */
+// [EduMap fix] 2026-04-22: Added 'harvest' and 'organize' so the per-doc
+// pipeline can run as two LLM calls — first a concept-harvest pass that
+// produces a flat list of atomic concepts (ignoring document structure),
+// then a semantic-organize pass that clusters them by knowledge category
+// into the hierarchical markdown. 'extract' is kept for callers that
+// still want the old single-shot flow (e.g., fallback paths). The UI
+// just renders the list, so adding new types is backward-compatible.
 export interface AgentTask {
   id: string
-  type: 'extract' | 'merge'
+  type: 'extract' | 'harvest' | 'organize' | 'merge'
   documentId?: string
   model: string
   status: 'pending' | 'running' | 'done' | 'error'

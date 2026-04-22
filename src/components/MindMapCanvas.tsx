@@ -86,19 +86,34 @@ function MindMapCanvasInner({
   const expandAll = useMindMapStore((s) => s.expandAll)
   const collapseAll = useMindMapStore((s) => s.collapseAll)
 
-  // Sync external node/edge changes (collapse state is now managed by the store)
-  const prevNodesKey = useRef('')
-  const nodeKey = initialNodes.map((n) => n.id).join(',')
-  if (nodeKey !== prevNodesKey.current) {
-    prevNodesKey.current = nodeKey
+  // [EduMap fix] 2026-04-22: Sync external node/edge changes in a SINGLE
+  // effect so nodes and edges always land in the internal state together.
+  //
+  // Previously each had its own top-level `if` that compared against a ref
+  // and called setState during render:
+  //   if (nodeKey !== prevNodesKey.current) setNodes(initialNodes)
+  //   if (initialEdges !== prevEdgesRef.current) setEdges(initialEdges)
+  //
+  // Two independent `if`s meant the two setters weren't batched together
+  // deterministically — on the upload path the parent re-renders with new
+  // nodes+edges, but React Flow's internal pipeline could observe an
+  // intermediate state where `nodes` is the new set and `edges` is still
+  // the previous set (or vice versa). That's exactly the "right after
+  // upload the mind map looks completely wrong, then a moment later it
+  // corrects itself" symptom Yana reported — the first render after the
+  // store swap momentarily paired new nodes with stale edges (or new
+  // edges with stale nodes), producing a wrong tidy-layout pass before
+  // the second render caught up.
+  //
+  // Moving both updates into one `useEffect` makes them happen in the
+  // same commit, and comparing by reference (the store hands us new
+  // array references on every update) keeps the effect cheap. We
+  // explicitly skip no-op runs so unrelated parent re-renders don't
+  // thrash React Flow's internal state.
+  useEffect(() => {
     setNodes(initialNodes)
-  }
-
-  const prevEdgesRef = useRef(initialEdges)
-  if (initialEdges !== prevEdgesRef.current) {
-    prevEdgesRef.current = initialEdges
     setEdges(initialEdges)
-  }
+  }, [initialNodes, initialEdges, setNodes, setEdges])
 
   // Listen for label-change events dispatched by editable node labels
   useEffect(() => {
@@ -198,7 +213,10 @@ function MindMapCanvasInner({
         const newEdges = addEdge(
           {
             ...connection,
-            type: 'smoothstep',
+            // [EduMap fix] 2026-04-22: Match the bezier edge style used by
+            // the graph builder (see mindmapTransformer.ts) so user-drawn
+            // edges look identical to LLM-derived ones.
+            type: 'default',
             style: { stroke: '#3b82f6', strokeWidth: 2, strokeDasharray: '5,5' },
             animated: true,
           },
@@ -380,7 +398,7 @@ function MindMapCanvasInner({
         connectOnClick
         className="bg-slate-50/50"
         connectionLineStyle={{ stroke: '#3b82f6', strokeWidth: 2 }}
-        defaultEdgeOptions={{ type: 'smoothstep' }}
+        defaultEdgeOptions={{ type: 'default' }}
         deleteKeyCode={['Delete', 'Backspace']}
         selectionOnDrag
         panOnDrag={[1, 2]}

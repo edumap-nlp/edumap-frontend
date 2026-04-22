@@ -1,5 +1,16 @@
 import type { PDFDocument, AgentTask, LLMProvider } from '../types'
-import { callLLM, buildExtractionPrompt, buildMergePrompt } from './llmService'
+// [EduMap fix] 2026-04-22: Swapped the single-shot `buildExtractionPrompt`
+// for the two-stage `buildHarvestPrompt` + `buildOrganizePrompt` pair.
+// See llmService.ts for why the job was split (short version: the old
+// single-shot pass kept mirroring the paper's section order; splitting
+// concept-harvesting from semantic-organization forces the cluster
+// decision to happen with the full concept landscape in view).
+import {
+  callLLM,
+  buildHarvestPrompt,
+  buildOrganizePrompt,
+  buildMergePrompt,
+} from './llmService'
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://localhost:3001/api'
 
@@ -121,49 +132,112 @@ export async function processDocumentsWithAgents(
   }
   const available = health.providers
 
-  // Create extraction tasks — one per document
-  const extractionTasks: AgentTask[] = documents.map((doc) => {
-    const { provider, model } = selectModelForDocument(doc, available)
-    return {
-      id: `extract-${doc.id}`,
-      type: 'extract' as const,
-      documentId: doc.id,
-      model: `${provider}/${model}`,
-      status: 'pending' as const,
-      input: doc.text,
+  // [EduMap fix] 2026-04-22: Two tasks per document — harvest and organize.
+  // They run sequentially for the same document (organize needs harvest's
+  // output) but the per-document pipelines still run in parallel with each
+  // other, so multi-doc throughput is unchanged.
+  const perDocTasks: { harvest: AgentTask; organize: AgentTask }[] = documents.map(
+    (doc) => {
+      const { provider, model } = selectModelForDocument(doc, available)
+      const modelStr = `${provider}/${model}`
+      return {
+        harvest: {
+          id: `harvest-${doc.id}`,
+          type: 'harvest' as const,
+          documentId: doc.id,
+          model: modelStr,
+          status: 'pending' as const,
+          input: doc.text,
+        },
+        organize: {
+          id: `organize-${doc.id}`,
+          type: 'organize' as const,
+          documentId: doc.id,
+          model: modelStr,
+          status: 'pending' as const,
+          input: '', // filled in after harvest completes
+        },
+      }
     }
-  })
+  )
 
+  // Flat task list for the progress UI. The UI renders whatever is in
+  // this array in order, so put harvest before organize per document.
+  const extractionTasks: AgentTask[] = perDocTasks.flatMap((p) => [
+    p.harvest,
+    p.organize,
+  ])
   onProgress?.([...extractionTasks])
 
-  // Run extraction agents in parallel
+  // Run the per-document pipelines in parallel. Each pipeline is
+  // harvest → organize; failures in harvest skip organize for that doc.
   const extractionResults = await Promise.allSettled(
-    extractionTasks.map(async (task, idx) => {
-      task.status = 'running'
-      onProgress?.([...extractionTasks])
+    perDocTasks.map(async ({ harvest, organize }, idx) => {
+      const doc = documents[idx]
+      const [provider, model] = harvest.model.split('/')
 
+      // ── Stage 1: harvest ─────────────────────────────────────────
+      harvest.status = 'running'
+      onProgress?.([...extractionTasks])
+      let atoms: string
       try {
-        const [provider, model] = task.model.split('/')
-        const messages = buildExtractionPrompt(task.input, documents[idx].name, userPrompt)
-        const response = await callLLM({
+        const harvestMessages = buildHarvestPrompt(doc.text, doc.name, userPrompt)
+        const harvestResponse = await callLLM({
           provider: provider as LLMProvider,
           model,
-          messages,
+          messages: harvestMessages,
         })
-        task.status = 'done'
-        task.output = response.content
+        atoms = harvestResponse.content.trim()
+        harvest.status = 'done'
+        harvest.output = atoms
         onProgress?.([...extractionTasks])
-        return response.content
       } catch (err) {
-        task.status = 'error'
-        task.output = String(err)
+        harvest.status = 'error'
+        harvest.output = String(err)
+        // Cascade: organize cannot run without atoms. Mark it errored so
+        // the user sees why it was skipped.
+        organize.status = 'error'
+        organize.output = 'Skipped — harvest step failed.'
+        onProgress?.([...extractionTasks])
+        throw err
+      }
+
+      // Defensive: a completely empty atom list would produce an empty
+      // organize call. Treat it as a soft failure and fall back to
+      // showing the raw harvest output so the user isn't staring at an
+      // empty mindmap.
+      if (!atoms) {
+        organize.status = 'error'
+        organize.output = 'Skipped — harvest returned no atoms.'
+        onProgress?.([...extractionTasks])
+        throw new Error(`Harvest for "${doc.name}" returned no atoms.`)
+      }
+
+      // ── Stage 2: organize ────────────────────────────────────────
+      organize.input = atoms
+      organize.status = 'running'
+      onProgress?.([...extractionTasks])
+      try {
+        const organizeMessages = buildOrganizePrompt(atoms, doc.name, userPrompt)
+        const organizeResponse = await callLLM({
+          provider: provider as LLMProvider,
+          model,
+          messages: organizeMessages,
+        })
+        organize.status = 'done'
+        organize.output = organizeResponse.content
+        onProgress?.([...extractionTasks])
+        return organizeResponse.content
+      } catch (err) {
+        organize.status = 'error'
+        organize.output = String(err)
         onProgress?.([...extractionTasks])
         throw err
       }
     })
   )
 
-  // Collect successful extractions
+  // Collect successful per-document markdowns (output of the organize step).
   const markdowns: string[] = []
   const docNames: string[] = []
   extractionResults.forEach((result, idx) => {
@@ -179,6 +253,10 @@ export async function processDocumentsWithAgents(
     // "All document extraction agents failed" in the root node and had
     // no way to know whether it was a bad model id, an auth error, or
     // the backend being down.
+    //
+    // [EduMap fix] 2026-04-22: With two stages, prefer the earliest
+    // error message — harvest failures explain organize failures, so
+    // surfacing harvest's error is more useful when both failed.
     const firstError = extractionTasks.find((t) => t.status === 'error')?.output
     const detail = firstError ? `\n${firstError}` : ''
     throw new Error(`All document extraction agents failed.${detail}`)
