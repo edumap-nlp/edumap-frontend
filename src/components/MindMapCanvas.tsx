@@ -18,6 +18,7 @@ import {
 import '@xyflow/react/dist/style.css'
 import { toPng } from 'html-to-image'
 import { nodeTypes } from './MindMapNode'
+import { layoutNodes } from '../services/mindmapTransformer'
 import type { MindMapEdge, MindMapCanvasProps, MindMapNode, MindMapNodeData } from '../types'
 
 let nextNodeId = 1000
@@ -54,8 +55,13 @@ function buildDepthMap(nodes: MindMapNode[]): Map<string, number> {
 
 /**
  * Compute the initial set of collapsed node IDs:
- * any node whose depth == MAX_VISIBLE_DEPTH AND has children should be collapsed
- * so its children (depth > MAX_VISIBLE_DEPTH) stay hidden.
+ * only collapse nodes whose depth >= MAX_VISIBLE_DEPTH AND that have children,
+ * so everything up to MAX_VISIBLE_DEPTH stays visible on first render.
+ *
+ * [EduMap multimodal] 2026-04-21 fix: the previous version collapsed EVERY
+ * node with children, which meant every level-2 and level-3 heading started
+ * hidden. Users reported missing titles. Now the initial view shows the full
+ * 3-level mind map and only depth-4+ bullets are hidden behind their parent.
  */
 function computeInitialCollapsed(
   nodes: MindMapNode[],
@@ -64,7 +70,9 @@ function computeInitialCollapsed(
   const childMap = buildChildMap(edges)
   const collapsed = new Set<string>()
   for (const n of nodes) {
-    if (childMap.has(n.id)) {
+    if (!childMap.has(n.id)) continue
+    const depth = (n.data as MindMapNodeData).depth
+    if (depth >= MAX_VISIBLE_DEPTH) {
       collapsed.add(n.id)
     }
   }
@@ -169,6 +177,24 @@ function MindMapCanvasInner({
     return () => window.removeEventListener('mindmap-node-collapse-toggle', handler)
   }, [])
 
+  // [EduMap multimodal] 2026-04-21: Auto-fit the viewport to the visible
+  // nodes whenever collapse state changes. Without this the frame stays sized
+  // for the full (expanded) tree even after the user collapses a branch, so
+  // the canvas feels like it has a lot of empty space. We skip the *first*
+  // render so we don't conflict with ReactFlow's own `fitView` prop.
+  const isFirstFitRef = useRef(true)
+  useEffect(() => {
+    if (isFirstFitRef.current) {
+      isFirstFitRef.current = false
+      return
+    }
+    // Let ReactFlow finish its internal layout/diff pass before measuring.
+    const timer = setTimeout(() => {
+      fitView({ duration: 400, padding: 0.2 })
+    }, 50)
+    return () => clearTimeout(timer)
+  }, [collapsedNodeIds, fitView])
+
   // ── Derive visible nodes & edges based on collapsed state ──────────────────
   const childMap = useMemo(() => buildChildMap(edges), [edges])
   const depthMap = useMemo(() => buildDepthMap(nodes), [nodes])
@@ -178,7 +204,7 @@ function MindMapCanvasInner({
     [collapsedNodeIds, childMap]
   )
 
-  const visibleNodes = useMemo(() => {
+  const visibleNodesRaw = useMemo(() => {
     return nodes
       .filter((n) => !hiddenIds.has(n.id))
       .map((n) => {
@@ -198,6 +224,18 @@ function MindMapCanvasInner({
   const visibleEdges = useMemo(
     () => edges.filter((e) => !hiddenIds.has(e.source) && !hiddenIds.has(e.target)),
     [edges, hiddenIds]
+  )
+
+  // [EduMap multimodal] 2026-04-21: Re-run dagre on the visible subset so
+  // collapsed branches actually pack the remaining nodes tightly. Without
+  // this the sibling of a collapsed node stays at its original far-right
+  // coordinate and the canvas looks the same width as the fully-expanded
+  // tree — which is exactly what Jun reported ("只显示二级标题和显示全部
+  // 的长度是一样的"). The subsequent `fitView` then frames the tighter
+  // layout instead of the old sprawling one.
+  const visibleNodes = useMemo(
+    () => layoutNodes(visibleNodesRaw, visibleEdges),
+    [visibleNodesRaw, visibleEdges]
   )
 
   // ── Handlers ────────────────────────────────────────────────────────────────

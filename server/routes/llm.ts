@@ -69,11 +69,16 @@ llmRouter.post('/chat', async (req: Request, res: Response) => {
         }
         const oai = getOpenAI()
 
-        // For Azure OpenAI, use the deployment name instead of the model name
+        // For Azure OpenAI, use the deployment name instead of the model name.
+        // For standard OpenAI, let OPENAI_MODEL (.env) override the frontend's
+        // requested model — the frontend ships future model names like
+        // `gpt-5.2` / `gpt-codex-5.3` that not every OpenAI account has access
+        // to, so this lets Jun pin a known-good model (e.g. `gpt-5`, `gpt-4o`)
+        // without touching client code.
         const isAzure = !!process.env.OPENAI_ENDPOINT
         const modelOrDeployment = isAzure
           ? (process.env.OPENAI_DEPLOYMENT_NAME ?? 'gpt-5')
-          : model
+          : (process.env.OPENAI_MODEL ?? model)
 
         // Azure GPT-5 may restrict temperature — only include it for standard OpenAI
         const chatParams: Record<string, unknown> = {

@@ -33,16 +33,29 @@ export async function getAvailableProviders(): Promise<HealthResult> {
   }
 }
 
-/** Default extract/merge target when heuristics do not apply: Google, then OpenAI, then Anthropic. */
+/**
+ * Default extract/merge target when heuristics do not apply.
+ *
+ * [EduMap multimodal] 2026-04-21: Reordered OpenAI ahead of Google because the
+ * team's primary deployment is Azure OpenAI (teammate) / standard OpenAI (Jun)
+ * — with only OPENAI_API_KEY set, the previous Google-first order caused the
+ * orchestrator to match nothing useful, fail, and fall back to raw PDF text
+ * (which is exactly what Jun was seeing: "只有一个PDF文件, 没有思维导图").
+ *
+ * Also bumped the OpenAI default model from the future-dated `gpt-5.2` to
+ * `gpt-5` to match OPENAI_DEPLOYMENT_NAME in .env.example. The backend
+ * (server/routes/llm.ts) honours an OPENAI_MODEL env override so accounts
+ * without gpt-5 access can pin e.g. `gpt-4o` without touching this code.
+ */
 function pickFallbackProvider(available: Record<string, boolean>): {
   provider: LLMProvider
   model: string
 } {
-  if (available.google) return { provider: 'google', model: GOOGLE_MODEL }
-  if (available.openai) return { provider: 'openai', model: 'gpt-5.2' }
+  if (available.openai) return { provider: 'openai', model: 'gpt-5' }
   if (available.anthropic) return { provider: 'anthropic', model: 'claude-sonnet-4.6' }
+  if (available.google) return { provider: 'google', model: GOOGLE_MODEL }
   throw new Error(
-    'No LLM provider is available. Ensure the API server is running and set GOOGLE_API_KEY, OPENAI_API_KEY, or ANTHROPIC_API_KEY in .env.'
+    'No LLM provider is available. Ensure the API server is running and set OPENAI_API_KEY, ANTHROPIC_API_KEY, or GOOGLE_API_KEY in .env.'
   )
 }
 
@@ -65,8 +78,14 @@ function selectModelForDocument(
     (score, ind) => score + (doc.text.includes(ind) ? 1 : 0),
     0
   )
+  // [EduMap multimodal] 2026-04-21: Dropped the hardcoded `gpt-codex-5.3`
+  // model — that name isn't a real OpenAI model id and caused the
+  // extraction to 500 out whenever an academic paper tripped the code
+  // heuristic (most ML papers have enough `import`/`def`/`class` tokens
+  // to hit score≥3). Route code-heavy docs to plain OpenAI with the
+  // default model instead; OPENAI_MODEL env on the backend still wins.
   if (codeScore >= 3 && available.openai) {
-    return { provider: 'openai-codex', model: 'gpt-codex-5.3' }
+    return { provider: 'openai', model: 'gpt-4o' }
   }
   if (codeScore >= 3 && available.google) {
     return { provider: 'google', model: GOOGLE_MODEL }
@@ -153,7 +172,14 @@ export async function processDocumentsWithAgents(
   })
 
   if (markdowns.length === 0) {
-    throw new Error('All document extraction agents failed')
+    // [EduMap multimodal] 2026-04-21: Include the first task's actual
+    // error instead of a generic message. Without this Jun just saw
+    // "All document extraction agents failed" in the root node and had
+    // no way to know whether it was a bad model id, an auth error, or
+    // the backend being down.
+    const firstError = extractionTasks.find((t) => t.status === 'error')?.output
+    const detail = firstError ? `\n${firstError}` : ''
+    throw new Error(`All document extraction agents failed.${detail}`)
   }
 
   // Single document — no merge needed

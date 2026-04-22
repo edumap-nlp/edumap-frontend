@@ -25,6 +25,66 @@ export interface PDFDocument {
   text: string
   pageCount: number
   file: File
+  /**
+   * [EduMap multimodal] Added 2026-04-21.
+   * Optional multimodal enrichment from the Yana pipeline (via
+   * POST /api/pdf/extract-multimodal). When present, agentOrchestrator sends
+   * `multimodalContext` to the LLM instead of plain `text`. Shape is documented
+   * in server/routes/multimodal.ts and edumap_yana_model/code/multimodal_pipeline_v2.py.
+   */
+  multimodal?: MultimodalExtraction
+}
+
+/* ── Multimodal (Yana pipeline v2) ── */
+export interface MultimodalFigure {
+  id: string
+  page: number
+  bbox: number[] | null
+  image_path: string
+  caption: string
+  vision_description: string
+  surrounding_text: string
+  ocr_text: string
+  source: string
+}
+
+export interface MultimodalFormula {
+  id: string
+  page: number
+  kind: 'text' | 'image'
+  context: string
+  latex_guess: string
+  image_path?: string | null
+}
+
+export interface MultimodalTable {
+  page: number
+  header: string[]
+  rows: string[][]
+  csv: string
+}
+
+export interface MultimodalAnchor {
+  kind: 'figure' | 'table' | 'equation'
+  number: number
+  page: number
+  char_offset: number
+}
+
+export interface MultimodalExtraction {
+  doc_id: string
+  page_count: number
+  layout: 'single' | 'two-column' | 'mixed'
+  text_blocks: { page: number; bbox: number[] | null; text: string; column: number }[]
+  figures: MultimodalFigure[]
+  formulas: MultimodalFormula[]
+  tables: MultimodalTable[]
+  anchors: MultimodalAnchor[]
+  counts: Record<string, number>
+  token_stats: { input_tokens: number; output_tokens: number }
+  timing_seconds: number
+  multimodal_context: string
+  markdown: string
 }
 
 /* ── LLM ── */

@@ -1,6 +1,10 @@
 import { useState, useCallback, useRef } from 'react'
 import type { PDFDocument } from '../types'
-import { extractMultiplePdfs } from '../services/pdfService'
+// [EduMap multimodal] Changed 2026-04-21: switched from the text-only
+// `extractMultiplePdfs` to `extractMultimodalFromPdfs`, which calls the new
+// /api/pdf/extract-multimodal endpoint (Yana pipeline v2) and transparently
+// falls back to plain text if the backend sidecar is unreachable.
+import { extractMultimodalFromPdfs } from '../services/pdfService'
 
 interface PdfUploadModalProps {
   isOpen: boolean
@@ -35,12 +39,14 @@ export default function PdfUploadModal({ isOpen, onClose, onDocumentsReady }: Pd
     }
 
     setIsExtracting(true)
-    setProgress('Extracting text from PDFs...')
+    // [EduMap multimodal] Progress label updated to reflect the richer pipeline.
+    setProgress('Running multimodal extraction (text + figures + formulas)...')
     setError(null)
 
     try {
-      const docs = await extractMultiplePdfs(files)
-      setProgress('Text extraction complete!')
+      // [EduMap multimodal] Changed 2026-04-21.
+      const docs = await extractMultimodalFromPdfs(files)
+      setProgress('Multimodal extraction complete!')
       onDocumentsReady(docs, userPrompt.trim() || undefined)
       setFiles([])
       setUserPrompt('')

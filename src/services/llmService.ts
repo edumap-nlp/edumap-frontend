@@ -63,6 +63,10 @@ export async function callLLM(options: LLMCallOptions): Promise<LLMResponse> {
 
 
 // ── System prompts (string[] + join keeps sent text free of code-indent spaces) ──
+// [EduMap multimodal] 2026-04-21: Extended with a block that teaches the LLM how
+// to consume the tagged multimodal context produced by Yana pipeline v2
+// ([TEXT], [FIGURE], [FORMULA], [TABLE]). When the document is plain text (no
+// tags), those instructions are harmless and the model behaves as before.
 const EXTRACTION_SYSTEM = [
   'You are an expert at reading academic papers and building concept maps for students.',
   '',
@@ -72,19 +76,34 @@ const EXTRACTION_SYSTEM = [
   '- A technique, method, or algorithm',
   '- A problem or challenge being addressed',
   '- A theoretical principle or finding',
+  '- A key empirical finding from a figure or table',
+  '- A mathematical relationship from an equation',
   '',
   'What does NOT count:',
   '- Paper sections ("Related Work", "Evaluation", "Future Work")',
   '- The paper title or topic as a root node',
   '- Vague grouping categories that exist only to hold children',
   '',
+  // ── Multimodal handling (added 2026-04-21) ─────────────────────────
+  'Multimodal input format:',
+  '- The document text may contain tagged blocks: [TEXT p{N} c{N}], [FIGURE id=... p{N}], [FORMULA id=... p{N} kind=...], [TABLE p{N}].',
+  '- [FIGURE] blocks include a caption, a short vision-model description, and OCR text. Use the description (not the OCR) as the source of truth when deciding whether the figure deserves its own node.',
+  '- [FORMULA] blocks include a latex_guess and a short context. Promote an equation to its own node only when it expresses a core relationship, not when it is a routine identity.',
+  '- [TABLE] blocks include a header and a sample of rows. Extract the relationship the table is demonstrating, not the raw numbers.',
+  '- When a concept was derived primarily from a figure, formula, or table, append the tag [Visual], [Formula], or [Table] at the end of the node text (in addition to [Hard]/[Important]/[Low Priority]).',
+  '',
   'Strict formatting rules:',
   '- Your response must begin with # and contain NOTHING else. No preamble, no commentary.',
   '- Do NOT use bold (**), italic (*), or any inline formatting. Plain text only.',
-  '- Produce 5-7 top-level concepts with 2-4 sub-concepts each. Maximum 3 levels deep.',
-  '- Do NOT exceed 25 total nodes. Be selective, not exhaustive.',
+  '- Exactly 3 heading levels: one `# ROOT`, then `## L2` sections, then `### L3` sections.',
+  '- Do NOT use `####` or deeper. Do NOT use bullet points.',
+  '- REQUIRED structure (hard constraint — the mind-map UI depends on it):',
+  '    • Exactly ONE `#` root node, named after the paper\'s core topic.',
+  '    • 3 to 5 `##` second-level nodes directly under the root.',
+  '    • Each `##` node MUST have 3 to 5 `###` third-level children. Not 2, not 6.',
+  '- If you have more than 5 candidate sub-concepts, merge or drop; if fewer than 3, split or add a closely-related sibling. Never leave a `##` with 0–2 children.',
   '- Node descriptions: 10 words max. Most nodes need no description at all.',
-  '- Tags: [Hard] for mathematically dense, [Important] for foundational, [Low Priority] for tangential.',
+  '- Tags: [Hard] for mathematically dense, [Important] for foundational, [Low Priority] for tangential, [Visual]/[Formula]/[Table] for multimodal-derived nodes.',
   '',
   'Relationships should reflect logical dependency:',
   '- "A requires B" (prerequisite)',

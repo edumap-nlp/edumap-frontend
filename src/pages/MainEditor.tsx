@@ -49,11 +49,32 @@ export default function MainEditor() {
         }, prompt)
         store.updateFromMarkdown(result.markdown)
       } catch (err) {
+        // [EduMap multimodal] 2026-04-21: Make the LLM failure visible.
+        // The mindmap parser only keeps headings/bullets, so multi-line
+        // errors get truncated when crammed into a single `##`. Split by
+        // newline and render each line as its own node so the actual
+        // OpenAI error (e.g. "model 'gpt-5' does not exist") is visible.
         console.error('Document processing failed:', err)
-        // Fallback: use raw text as markdown
-        const fallbackMd = docs
-          .map((d) => `# ${d.name}\n\n${d.text.slice(0, 2000)}`)
-          .join('\n\n')
+        const msg = err instanceof Error ? err.message : String(err)
+        const errorLines = msg
+          .split(/\r?\n/)
+          .map((l) => l.trim())
+          .filter(Boolean)
+        const errorHeadings = errorLines.length > 0
+          ? errorLines.map((line, i) => `${i === 0 ? '##' : '###'} ${line}`).join('\n')
+          : '## Unknown error'
+        const fallbackMd = [
+          `# ⚠️ Mind map generation failed`,
+          ``,
+          errorHeadings,
+          ``,
+          `## Debugging`,
+          `### Open browser DevTools > Console for the full error`,
+          `### Check API server logs (the terminal running dev:server)`,
+          `### Verify OPENAI_API_KEY and OPENAI_MODEL are correct in .env`,
+          ``,
+          ...docs.map((d) => `## ${d.name}\n\n${d.text.slice(0, 1500)}`),
+        ].join('\n')
         store.updateFromMarkdown(fallbackMd)
       } finally {
         store.setIsProcessing(false)
