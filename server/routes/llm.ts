@@ -69,19 +69,37 @@ llmRouter.post('/chat', async (req: Request, res: Response) => {
         }
         const oai = getOpenAI()
 
-        // For Azure OpenAI, use the deployment name instead of the model name
+        // For Azure OpenAI, use the deployment name instead of the model name.
+        // For standard OpenAI, let OPENAI_MODEL (.env) override the frontend's
+        // requested model — the frontend ships future model names like
+        // `gpt-5.2` / `gpt-codex-5.3` that not every OpenAI account has access
+        // to, so this lets Jun pin a known-good model (e.g. `gpt-5`, `gpt-4o`)
+        // without touching client code.
         const isAzure = !!process.env.OPENAI_ENDPOINT
         const modelOrDeployment = isAzure
           ? (process.env.OPENAI_DEPLOYMENT_NAME ?? 'gpt-5')
-          : model
+          : (process.env.OPENAI_MODEL ?? model)
 
-        // Azure GPT-5 may restrict temperature — only include it for standard OpenAI
+        // [EduMap multimodal] 2026-04-21: Some model families reject a custom
+        // `temperature` and only accept the default (1). Jun hit this live:
+        //     400 Unsupported value: 'temperature' does not support 0.3 with
+        //     this model. Only the default (1) value is supported.
+        // Applies to GPT-5 (both Azure and standard OpenAI), and to the o1/o3
+        // reasoning models. We detect by model prefix and drop `temperature`
+        // for those; everything else still gets the caller's value so
+        // temperature=0.3 keeps producing consistent mind maps on gpt-4o.
+        const modelLower = modelOrDeployment.toLowerCase()
+        const restrictsTemperature =
+          modelLower.startsWith('gpt-5') ||
+          modelLower.startsWith('o1') ||
+          modelLower.startsWith('o3')
+
         const chatParams: Record<string, unknown> = {
           model: modelOrDeployment,
           messages: messages.map((m) => ({ role: m.role, content: m.content })),
           max_completion_tokens: maxTokens,
         }
-        if (!isAzure) {
+        if (!restrictsTemperature) {
           chatParams.temperature = temperature
         }
 

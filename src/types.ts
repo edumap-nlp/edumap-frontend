@@ -25,6 +25,66 @@ export interface PDFDocument {
   text: string
   pageCount: number
   file: File
+  /**
+   * [EduMap multimodal] Added 2026-04-21.
+   * Optional multimodal enrichment from the Yana pipeline (via
+   * POST /api/pdf/extract-multimodal). When present, agentOrchestrator sends
+   * `multimodalContext` to the LLM instead of plain `text`. Shape is documented
+   * in server/routes/multimodal.ts and edumap_yana_model/code/multimodal_pipeline_v2.py.
+   */
+  multimodal?: MultimodalExtraction
+}
+
+/* ── Multimodal (Yana pipeline v2) ── */
+export interface MultimodalFigure {
+  id: string
+  page: number
+  bbox: number[] | null
+  image_path: string
+  caption: string
+  vision_description: string
+  surrounding_text: string
+  ocr_text: string
+  source: string
+}
+
+export interface MultimodalFormula {
+  id: string
+  page: number
+  kind: 'text' | 'image'
+  context: string
+  latex_guess: string
+  image_path?: string | null
+}
+
+export interface MultimodalTable {
+  page: number
+  header: string[]
+  rows: string[][]
+  csv: string
+}
+
+export interface MultimodalAnchor {
+  kind: 'figure' | 'table' | 'equation'
+  number: number
+  page: number
+  char_offset: number
+}
+
+export interface MultimodalExtraction {
+  doc_id: string
+  page_count: number
+  layout: 'single' | 'two-column' | 'mixed'
+  text_blocks: { page: number; bbox: number[] | null; text: string; column: number }[]
+  figures: MultimodalFigure[]
+  formulas: MultimodalFormula[]
+  tables: MultimodalTable[]
+  anchors: MultimodalAnchor[]
+  counts: Record<string, number>
+  token_stats: { input_tokens: number; output_tokens: number }
+  timing_seconds: number
+  multimodal_context: string
+  markdown: string
 }
 
 /* ── LLM ── */
@@ -46,9 +106,16 @@ export const DEFAULT_LLM_CONFIGS: Record<string, LLMConfig> = {
 }
 
 /* ── Agent Orchestration ── */
+// [EduMap fix] 2026-04-22: Added 'harvest' and 'organize' so the per-doc
+// pipeline can run as two LLM calls — first a concept-harvest pass that
+// produces a flat list of atomic concepts (ignoring document structure),
+// then a semantic-organize pass that clusters them by knowledge category
+// into the hierarchical markdown. 'extract' is kept for callers that
+// still want the old single-shot flow (e.g., fallback paths). The UI
+// just renders the list, so adding new types is backward-compatible.
 export interface AgentTask {
   id: string
-  type: 'extract' | 'merge'
+  type: 'extract' | 'harvest' | 'organize' | 'merge'
   documentId?: string
   model: string
   status: 'pending' | 'running' | 'done' | 'error'

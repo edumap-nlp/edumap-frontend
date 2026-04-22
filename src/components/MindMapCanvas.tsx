@@ -18,16 +18,11 @@ import {
 import '@xyflow/react/dist/style.css'
 import { toPng } from 'html-to-image'
 import { nodeTypes } from './MindMapNode'
+import { layoutNodes } from '../services/mindmapTransformer'
+import { useMindMapStore } from '../hooks/useMindMapStore'
 import type { MindMapEdge, MindMapCanvasProps, MindMapNode, MindMapNodeData } from '../types'
 
 let nextNodeId = 1000
-
-/**
- * Maximum depth (inclusive) that is VISIBLE by default.
- * Nodes at depth > MAX_VISIBLE_DEPTH are hidden until their ancestor is expanded.
- * Depths are 1-based (root = 1, first branch = 2, ...).
- */
-const MAX_VISIBLE_DEPTH = 4
 
 /**
  * Build a child-map: nodeId → [childId, ...]
@@ -39,36 +34,6 @@ function buildChildMap(edges: MindMapEdge[]): Map<string, string[]> {
     map.get(e.source)!.push(e.target)
   }
   return map
-}
-
-/**
- * Build nodeId → depth from the node data (the depth field already stored).
- */
-function buildDepthMap(nodes: MindMapNode[]): Map<string, number> {
-  const map = new Map<string, number>()
-  for (const n of nodes) {
-    map.set(n.id, (n.data as MindMapNodeData).depth)
-  }
-  return map
-}
-
-/**
- * Compute the initial set of collapsed node IDs:
- * any node whose depth == MAX_VISIBLE_DEPTH AND has children should be collapsed
- * so its children (depth > MAX_VISIBLE_DEPTH) stay hidden.
- */
-function computeInitialCollapsed(
-  nodes: MindMapNode[],
-  edges: MindMapEdge[]
-): Set<string> {
-  const childMap = buildChildMap(edges)
-  const collapsed = new Set<string>()
-  for (const n of nodes) {
-    if (childMap.has(n.id)) {
-      collapsed.add(n.id)
-    }
-  }
-  return collapsed
 }
 
 /**
@@ -112,26 +77,43 @@ function MindMapCanvasInner({
   const [isAddingNode, setIsAddingNode] = useState(false)
 
   // ── Collapse state ──────────────────────────────────────────────────────────
-  // Initialize collapsed set directly from initialNodes/initialEdges
-  const [collapsedNodeIds, setCollapsedNodeIds] = useState<Set<string>>(() =>
-    computeInitialCollapsed(initialNodes, initialEdges)
-  )
+  // [EduMap multimodal] 2026-04-21: Pull collapse state from the shared
+  // store so the sidebar and the mind map can never disagree about which
+  // subtrees are hidden. The store seeds this to the default-L2 view
+  // whenever new markdown arrives.
+  const collapsedNodeIds = useMindMapStore((s) => s.collapsedNodeIds)
+  const toggleCollapsed = useMindMapStore((s) => s.toggleCollapsed)
+  const expandAll = useMindMapStore((s) => s.expandAll)
+  const collapseAll = useMindMapStore((s) => s.collapseAll)
 
-  // Sync external node/edge changes and re-compute auto-collapse
-  const prevNodesKey = useRef('')
-  const nodeKey = initialNodes.map((n) => n.id).join(',')
-  if (nodeKey !== prevNodesKey.current) {
-    prevNodesKey.current = nodeKey
+  // [EduMap fix] 2026-04-22: Sync external node/edge changes in a SINGLE
+  // effect so nodes and edges always land in the internal state together.
+  //
+  // Previously each had its own top-level `if` that compared against a ref
+  // and called setState during render:
+  //   if (nodeKey !== prevNodesKey.current) setNodes(initialNodes)
+  //   if (initialEdges !== prevEdgesRef.current) setEdges(initialEdges)
+  //
+  // Two independent `if`s meant the two setters weren't batched together
+  // deterministically — on the upload path the parent re-renders with new
+  // nodes+edges, but React Flow's internal pipeline could observe an
+  // intermediate state where `nodes` is the new set and `edges` is still
+  // the previous set (or vice versa). That's exactly the "right after
+  // upload the mind map looks completely wrong, then a moment later it
+  // corrects itself" symptom Yana reported — the first render after the
+  // store swap momentarily paired new nodes with stale edges (or new
+  // edges with stale nodes), producing a wrong tidy-layout pass before
+  // the second render caught up.
+  //
+  // Moving both updates into one `useEffect` makes them happen in the
+  // same commit, and comparing by reference (the store hands us new
+  // array references on every update) keeps the effect cheap. We
+  // explicitly skip no-op runs so unrelated parent re-renders don't
+  // thrash React Flow's internal state.
+  useEffect(() => {
     setNodes(initialNodes)
-    // Re-compute collapsed state for new node set
-    setCollapsedNodeIds(computeInitialCollapsed(initialNodes, initialEdges))
-  }
-
-  const prevEdgesRef = useRef(initialEdges)
-  if (initialEdges !== prevEdgesRef.current) {
-    prevEdgesRef.current = initialEdges
     setEdges(initialEdges)
-  }
+  }, [initialNodes, initialEdges, setNodes, setEdges])
 
   // Listen for label-change events dispatched by editable node labels
   useEffect(() => {
@@ -151,34 +133,45 @@ function MindMapCanvasInner({
     return () => window.removeEventListener('mindmap-node-label-change', handler)
   }, [setNodes, onNodeLabelChange])
 
-  // Listen for collapse-toggle events dispatched by node buttons
+  // Listen for collapse-toggle events dispatched by node buttons.
+  // [EduMap multimodal] 2026-04-21: Delegate to the store so the sidebar
+  // tree instantly reflects the same change — single source of truth.
   useEffect(() => {
     const handler = (e: Event) => {
       const { nodeId } = (e as CustomEvent).detail as { nodeId: string }
-      setCollapsedNodeIds((prev) => {
-        const next = new Set(prev)
-        if (next.has(nodeId)) {
-          next.delete(nodeId)
-        } else {
-          next.add(nodeId)
-        }
-        return next
-      })
+      toggleCollapsed(nodeId)
     }
     window.addEventListener('mindmap-node-collapse-toggle', handler)
     return () => window.removeEventListener('mindmap-node-collapse-toggle', handler)
-  }, [])
+  }, [toggleCollapsed])
+
+  // [EduMap multimodal] 2026-04-21: Auto-fit the viewport to the visible
+  // nodes whenever collapse state changes. Without this the frame stays sized
+  // for the full (expanded) tree even after the user collapses a branch, so
+  // the canvas feels like it has a lot of empty space. We skip the *first*
+  // render so we don't conflict with ReactFlow's own `fitView` prop.
+  const isFirstFitRef = useRef(true)
+  useEffect(() => {
+    if (isFirstFitRef.current) {
+      isFirstFitRef.current = false
+      return
+    }
+    // Let ReactFlow finish its internal layout/diff pass before measuring.
+    const timer = setTimeout(() => {
+      fitView({ duration: 400, padding: 0.2 })
+    }, 50)
+    return () => clearTimeout(timer)
+  }, [collapsedNodeIds, fitView])
 
   // ── Derive visible nodes & edges based on collapsed state ──────────────────
   const childMap = useMemo(() => buildChildMap(edges), [edges])
-  const depthMap = useMemo(() => buildDepthMap(nodes), [nodes])
 
   const hiddenIds = useMemo(
     () => collectHiddenIds(collapsedNodeIds, childMap),
     [collapsedNodeIds, childMap]
   )
 
-  const visibleNodes = useMemo(() => {
+  const visibleNodesRaw = useMemo(() => {
     return nodes
       .filter((n) => !hiddenIds.has(n.id))
       .map((n) => {
@@ -200,6 +193,18 @@ function MindMapCanvasInner({
     [edges, hiddenIds]
   )
 
+  // [EduMap multimodal] 2026-04-21: Re-run dagre on the visible subset so
+  // collapsed branches actually pack the remaining nodes tightly. Without
+  // this the sibling of a collapsed node stays at its original far-right
+  // coordinate and the canvas looks the same width as the fully-expanded
+  // tree — which is exactly what Jun reported ("只显示二级标题和显示全部
+  // 的长度是一样的"). The subsequent `fitView` then frames the tighter
+  // layout instead of the old sprawling one.
+  const visibleNodes = useMemo(
+    () => layoutNodes(visibleNodesRaw, visibleEdges),
+    [visibleNodesRaw, visibleEdges]
+  )
+
   // ── Handlers ────────────────────────────────────────────────────────────────
 
   const onConnect = useCallback(
@@ -208,7 +213,10 @@ function MindMapCanvasInner({
         const newEdges = addEdge(
           {
             ...connection,
-            type: 'smoothstep',
+            // [EduMap fix] 2026-04-22: Match the bezier edge style used by
+            // the graph builder (see mindmapTransformer.ts) so user-drawn
+            // edges look identical to LLM-derived ones.
+            type: 'default',
             style: { stroke: '#3b82f6', strokeWidth: 2, strokeDasharray: '5,5' },
             animated: true,
           },
@@ -359,17 +367,10 @@ function MindMapCanvasInner({
   }, [getNodes, onExportPng])
 
   // ── Expand/Collapse all ─────────────────────────────────────────────────────
-  const handleExpandAll = useCallback(() => setCollapsedNodeIds(new Set()), [])
-
-  const handleCollapseAll = useCallback(() => {
-    const toCollapse = new Set<string>()
-    for (const n of nodes) {
-      if (childMap.has(n.id)) {
-        toCollapse.add(n.id)
-      }
-    }
-    setCollapsedNodeIds(toCollapse)
-  }, [nodes, childMap])
+  // [EduMap multimodal] 2026-04-21: Route through the store so the sidebar
+  // tree expands/collapses in lockstep with the canvas.
+  const handleExpandAll = useCallback(() => expandAll(), [expandAll])
+  const handleCollapseAll = useCallback(() => collapseAll(), [collapseAll])
 
   const hiddenCount = hiddenIds.size
 
@@ -397,7 +398,7 @@ function MindMapCanvasInner({
         connectOnClick
         className="bg-slate-50/50"
         connectionLineStyle={{ stroke: '#3b82f6', strokeWidth: 2 }}
-        defaultEdgeOptions={{ type: 'smoothstep' }}
+        defaultEdgeOptions={{ type: 'default' }}
         deleteKeyCode={['Delete', 'Backspace']}
         selectionOnDrag
         panOnDrag={[1, 2]}
