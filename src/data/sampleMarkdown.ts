@@ -15,7 +15,7 @@ export const SAMPLE_MARKDOWN = `# Deep Learning Theory
 ##### Analytical Solution
 ##### Iterative Methods
 
-## Representation Power [Hard]
+## Representation Power [Hard]S
 ### Universal Approximation Theorem [Hard]
 #### Single Hidden Layer Results
 ##### Cybenko Theorem 1989

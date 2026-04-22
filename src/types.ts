@@ -183,3 +183,13 @@ export interface TopNavProps {
   isProcessing?: boolean
   activeModels?: string[]
 }
+
+export type ProviderStatus = {
+  configured: boolean
+  reachable: boolean | null
+  error?: string
+}
+
+export type HealthResult =
+  | { status: 'ok'; providers: Record<string, ProviderStatus> }
+  | { status: 'unavailable'; reason: string }
