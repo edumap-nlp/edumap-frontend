@@ -42,16 +42,18 @@ export async function getAvailableProviders(): Promise<HealthResult> {
  * orchestrator to match nothing useful, fail, and fall back to raw PDF text
  * (which is exactly what Jun was seeing: "只有一个PDF文件, 没有思维导图").
  *
- * Also bumped the OpenAI default model from the future-dated `gpt-5.2` to
- * `gpt-5` to match OPENAI_DEPLOYMENT_NAME in .env.example. The backend
- * (server/routes/llm.ts) honours an OPENAI_MODEL env override so accounts
- * without gpt-5 access can pin e.g. `gpt-4o` without touching this code.
+ * Model default: `gpt-4o`. Jun hit a 400 "temperature does not support 0.3"
+ * after first routing to gpt-5 for the drug-use PDF — gpt-5 only accepts the
+ * default temperature on the chat API. We default to gpt-4o (which accepts
+ * arbitrary temperature and is on every paid account) and let the backend
+ * OPENAI_MODEL env var override it. If someone wants to use gpt-5, the
+ * backend strips temperature automatically (server/routes/llm.ts).
  */
 function pickFallbackProvider(available: Record<string, boolean>): {
   provider: LLMProvider
   model: string
 } {
-  if (available.openai) return { provider: 'openai', model: 'gpt-5' }
+  if (available.openai) return { provider: 'openai', model: 'gpt-4o' }
   if (available.anthropic) return { provider: 'anthropic', model: 'claude-sonnet-4.6' }
   if (available.google) return { provider: 'google', model: GOOGLE_MODEL }
   throw new Error(

@@ -19,16 +19,10 @@ import '@xyflow/react/dist/style.css'
 import { toPng } from 'html-to-image'
 import { nodeTypes } from './MindMapNode'
 import { layoutNodes } from '../services/mindmapTransformer'
+import { useMindMapStore } from '../hooks/useMindMapStore'
 import type { MindMapEdge, MindMapCanvasProps, MindMapNode, MindMapNodeData } from '../types'
 
 let nextNodeId = 1000
-
-/**
- * Maximum depth (inclusive) that is VISIBLE by default.
- * Nodes at depth > MAX_VISIBLE_DEPTH are hidden until their ancestor is expanded.
- * Depths are 1-based (root = 1, first branch = 2, ...).
- */
-const MAX_VISIBLE_DEPTH = 4
 
 /**
  * Build a child-map: nodeId → [childId, ...]
@@ -40,43 +34,6 @@ function buildChildMap(edges: MindMapEdge[]): Map<string, string[]> {
     map.get(e.source)!.push(e.target)
   }
   return map
-}
-
-/**
- * Build nodeId → depth from the node data (the depth field already stored).
- */
-function buildDepthMap(nodes: MindMapNode[]): Map<string, number> {
-  const map = new Map<string, number>()
-  for (const n of nodes) {
-    map.set(n.id, (n.data as MindMapNodeData).depth)
-  }
-  return map
-}
-
-/**
- * Compute the initial set of collapsed node IDs:
- * only collapse nodes whose depth >= MAX_VISIBLE_DEPTH AND that have children,
- * so everything up to MAX_VISIBLE_DEPTH stays visible on first render.
- *
- * [EduMap multimodal] 2026-04-21 fix: the previous version collapsed EVERY
- * node with children, which meant every level-2 and level-3 heading started
- * hidden. Users reported missing titles. Now the initial view shows the full
- * 3-level mind map and only depth-4+ bullets are hidden behind their parent.
- */
-function computeInitialCollapsed(
-  nodes: MindMapNode[],
-  edges: MindMapEdge[]
-): Set<string> {
-  const childMap = buildChildMap(edges)
-  const collapsed = new Set<string>()
-  for (const n of nodes) {
-    if (!childMap.has(n.id)) continue
-    const depth = (n.data as MindMapNodeData).depth
-    if (depth >= MAX_VISIBLE_DEPTH) {
-      collapsed.add(n.id)
-    }
-  }
-  return collapsed
 }
 
 /**
@@ -120,19 +77,21 @@ function MindMapCanvasInner({
   const [isAddingNode, setIsAddingNode] = useState(false)
 
   // ── Collapse state ──────────────────────────────────────────────────────────
-  // Initialize collapsed set directly from initialNodes/initialEdges
-  const [collapsedNodeIds, setCollapsedNodeIds] = useState<Set<string>>(() =>
-    computeInitialCollapsed(initialNodes, initialEdges)
-  )
+  // [EduMap multimodal] 2026-04-21: Pull collapse state from the shared
+  // store so the sidebar and the mind map can never disagree about which
+  // subtrees are hidden. The store seeds this to the default-L2 view
+  // whenever new markdown arrives.
+  const collapsedNodeIds = useMindMapStore((s) => s.collapsedNodeIds)
+  const toggleCollapsed = useMindMapStore((s) => s.toggleCollapsed)
+  const expandAll = useMindMapStore((s) => s.expandAll)
+  const collapseAll = useMindMapStore((s) => s.collapseAll)
 
-  // Sync external node/edge changes and re-compute auto-collapse
+  // Sync external node/edge changes (collapse state is now managed by the store)
   const prevNodesKey = useRef('')
   const nodeKey = initialNodes.map((n) => n.id).join(',')
   if (nodeKey !== prevNodesKey.current) {
     prevNodesKey.current = nodeKey
     setNodes(initialNodes)
-    // Re-compute collapsed state for new node set
-    setCollapsedNodeIds(computeInitialCollapsed(initialNodes, initialEdges))
   }
 
   const prevEdgesRef = useRef(initialEdges)
@@ -159,23 +118,17 @@ function MindMapCanvasInner({
     return () => window.removeEventListener('mindmap-node-label-change', handler)
   }, [setNodes, onNodeLabelChange])
 
-  // Listen for collapse-toggle events dispatched by node buttons
+  // Listen for collapse-toggle events dispatched by node buttons.
+  // [EduMap multimodal] 2026-04-21: Delegate to the store so the sidebar
+  // tree instantly reflects the same change — single source of truth.
   useEffect(() => {
     const handler = (e: Event) => {
       const { nodeId } = (e as CustomEvent).detail as { nodeId: string }
-      setCollapsedNodeIds((prev) => {
-        const next = new Set(prev)
-        if (next.has(nodeId)) {
-          next.delete(nodeId)
-        } else {
-          next.add(nodeId)
-        }
-        return next
-      })
+      toggleCollapsed(nodeId)
     }
     window.addEventListener('mindmap-node-collapse-toggle', handler)
     return () => window.removeEventListener('mindmap-node-collapse-toggle', handler)
-  }, [])
+  }, [toggleCollapsed])
 
   // [EduMap multimodal] 2026-04-21: Auto-fit the viewport to the visible
   // nodes whenever collapse state changes. Without this the frame stays sized
@@ -197,7 +150,6 @@ function MindMapCanvasInner({
 
   // ── Derive visible nodes & edges based on collapsed state ──────────────────
   const childMap = useMemo(() => buildChildMap(edges), [edges])
-  const depthMap = useMemo(() => buildDepthMap(nodes), [nodes])
 
   const hiddenIds = useMemo(
     () => collectHiddenIds(collapsedNodeIds, childMap),
@@ -397,17 +349,10 @@ function MindMapCanvasInner({
   }, [getNodes, onExportPng])
 
   // ── Expand/Collapse all ─────────────────────────────────────────────────────
-  const handleExpandAll = useCallback(() => setCollapsedNodeIds(new Set()), [])
-
-  const handleCollapseAll = useCallback(() => {
-    const toCollapse = new Set<string>()
-    for (const n of nodes) {
-      if (childMap.has(n.id)) {
-        toCollapse.add(n.id)
-      }
-    }
-    setCollapsedNodeIds(toCollapse)
-  }, [nodes, childMap])
+  // [EduMap multimodal] 2026-04-21: Route through the store so the sidebar
+  // tree expands/collapses in lockstep with the canvas.
+  const handleExpandAll = useCallback(() => expandAll(), [expandAll])
+  const handleCollapseAll = useCallback(() => collapseAll(), [collapseAll])
 
   const hiddenCount = hiddenIds.size
 

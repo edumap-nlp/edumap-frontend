@@ -30,3 +30,6 @@ npm-debug.log*
 
 # Coverage
 coverage/
+
+
+OPENAI_API_KEY
