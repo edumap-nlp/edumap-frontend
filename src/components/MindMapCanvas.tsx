@@ -1,9 +1,8 @@
-import { useCallback, useRef, useState, useEffect, useMemo } from 'react'
+import { useCallback, useRef, useEffect, useMemo } from 'react'
 import {
   ReactFlow,
   Background,
   Controls,
-  MiniMap,
   useNodesState,
   useEdgesState,
   addEdge,
@@ -11,6 +10,7 @@ import {
   ReactFlowProvider,
   type Connection,
   type NodeMouseHandler,
+  type Node,
   Panel,
   BackgroundVariant,
   getNodesBounds,
@@ -60,6 +60,28 @@ function collectHiddenIds(
   return hidden
 }
 
+/**
+ * [EduMap fix] 2026-04-23: Count every descendant under a given node,
+ * memoized in a cache so repeated lookups across a tree remain O(N).
+ * Used to stamp `descendantCount` onto collapsed nodes so the badge
+ * can display "··· N nodes hidden" instead of a vague "subtree hidden".
+ */
+function countDescendants(
+  nodeId: string,
+  childMap: Map<string, string[]>,
+  cache: Map<string, number>
+): number {
+  const cached = cache.get(nodeId)
+  if (cached !== undefined) return cached
+
+  let total = 0
+  for (const childId of childMap.get(nodeId) ?? []) {
+    total += 1 + countDescendants(childId, childMap, cache)
+  }
+  cache.set(nodeId, total)
+  return total
+}
+
 function MindMapCanvasInner({
   nodes: initialNodes,
   edges: initialEdges,
@@ -74,7 +96,6 @@ function MindMapCanvasInner({
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges)
   const reactFlowWrapper = useRef<HTMLDivElement>(null)
   const { fitView, setCenter, getNodes, screenToFlowPosition } = useReactFlow()
-  const [isAddingNode, setIsAddingNode] = useState(false)
 
   // ── Collapse state ──────────────────────────────────────────────────────────
   // [EduMap multimodal] 2026-04-21: Pull collapse state from the shared
@@ -83,8 +104,21 @@ function MindMapCanvasInner({
   // whenever new markdown arrives.
   const collapsedNodeIds = useMindMapStore((s) => s.collapsedNodeIds)
   const toggleCollapsed = useMindMapStore((s) => s.toggleCollapsed)
-  const expandAll = useMindMapStore((s) => s.expandAll)
-  const collapseAll = useMindMapStore((s) => s.collapseAll)
+  // [EduMap fix] 2026-04-23: `expandAll` / `collapseAll` are driven from
+  // the sidebar outline's "Document Outline" header — the canvas used to
+  // have duplicate buttons in its top-left Panel, now removed.
+  // [EduMap fix] 2026-04-23 (edit tracking): Read the user-edit set so
+  // we can stamp `isEdited` onto visible nodes for the "pencil" badge.
+  const editedNodeIds = useMindMapStore((s) => s.editedNodeIds)
+  const setOriginalPngDataUrl = useMindMapStore((s) => s.setOriginalPngDataUrl)
+  // [EduMap fix] 2026-04-23 (button consolidation): Add-node mode is now
+  // owned by the store so the TopNav button can flip it; the canvas reads
+  // it to paint the crosshair cursor + placement banner.
+  const isAddingNode = useMindMapStore((s) => s.isAddingNode)
+  const setIsAddingNode = useMindMapStore((s) => s.setIsAddingNode)
+  // [EduMap fix] 2026-04-23 (drag-to-reparent): action used by
+  // `onNodeDragStop` below to splice the dragged node into its new parent.
+  const reparentAndReorder = useMindMapStore((s) => s.reparentAndReorder)
 
   // [EduMap fix] 2026-04-22: Sync external node/edge changes in a SINGLE
   // effect so nodes and edges always land in the internal state together.
@@ -172,21 +206,31 @@ function MindMapCanvasInner({
   )
 
   const visibleNodesRaw = useMemo(() => {
+    // [EduMap fix] 2026-04-23: Precompute descendant counts once per tree
+    // so the collapse badge can render "··· N nodes hidden" instead of a
+    // vague "subtree hidden". Shared cache makes this O(N) total.
+    const descendantCache = new Map<string, number>()
     return nodes
       .filter((n) => !hiddenIds.has(n.id))
       .map((n) => {
         const hasChildren = childMap.has(n.id)
         const isCollapsed = collapsedNodeIds.has(n.id)
+        const descendantCount = hasChildren
+          ? countDescendants(n.id, childMap, descendantCache)
+          : 0
+        const isEdited = editedNodeIds.has(n.id)
         return {
           ...n,
           data: {
             ...n.data,
             hasChildren,
             isCollapsed,
+            descendantCount,
+            isEdited,
           } as MindMapNodeData,
         }
       })
-  }, [nodes, hiddenIds, childMap, collapsedNodeIds])
+  }, [nodes, hiddenIds, childMap, collapsedNodeIds, editedNodeIds])
 
   const visibleEdges = useMemo(
     () => edges.filter((e) => !hiddenIds.has(e.source) && !hiddenIds.has(e.target)),
@@ -258,7 +302,7 @@ function MindMapCanvasInner({
       setIsAddingNode(false)
       return id
     },
-    [setNodes]
+    [setNodes, setIsAddingNode]
   )
 
   const onPaneDoubleClick = useCallback(
@@ -366,11 +410,217 @@ function MindMapCanvasInner({
     onExportPng?.()
   }, [getNodes, onExportPng])
 
-  // ── Expand/Collapse all ─────────────────────────────────────────────────────
-  // [EduMap multimodal] 2026-04-21: Route through the store so the sidebar
-  // tree expands/collapses in lockstep with the canvas.
-  const handleExpandAll = useCallback(() => expandAll(), [expandAll])
-  const handleCollapseAll = useCallback(() => collapseAll(), [collapseAll])
+  // [EduMap fix] 2026-04-23: Let the TopNav "Export Image" button trigger
+  // this canvas's PNG export via a window-level custom event. Previously
+  // App.tsx simulated a DOM click on a hidden PNG button inside the
+  // canvas Panel; once that duplicate button was removed we switched to
+  // this event-based wiring, which is also how label-change and
+  // collapse-toggle messages already flow between the canvas and the
+  // rest of the app.
+  useEffect(() => {
+    const handler = () => {
+      handleExportPng()
+    }
+    window.addEventListener('edumap-export-png', handler)
+    return () => window.removeEventListener('edumap-export-png', handler)
+  }, [handleExportPng])
+
+  // [EduMap fix] 2026-04-23 (edit tracking): Capture a PNG of the current
+  // canvas and stash it in the store as `originalPngDataUrl`. MainEditor
+  // dispatches this event shortly after `updateFromLLMMarkdown` so the
+  // snapshot reflects the LLM's output before the user has had a chance
+  // to edit. The TopNav later uses this stored dataUrl to offer an
+  // "Export Original Image" item that stays correct even after edits.
+  useEffect(() => {
+    const handler = async () => {
+      if (!reactFlowWrapper.current) return
+      const viewport = reactFlowWrapper.current.querySelector(
+        '.react-flow__viewport'
+      ) as HTMLElement | null
+      if (!viewport) return
+      const allNodes = getNodes()
+      if (allNodes.length === 0) return
+      try {
+        const bounds = getNodesBounds(allNodes)
+        const padding = 50
+        const dataUrl = await toPng(viewport, {
+          backgroundColor: '#ffffff',
+          width: bounds.width + padding * 2,
+          height: bounds.height + padding * 2,
+          style: {
+            width: String(bounds.width + padding * 2),
+            height: String(bounds.height + padding * 2),
+            transform: `translate(${-bounds.x + padding}px, ${-bounds.y + padding}px)`,
+          },
+        })
+        setOriginalPngDataUrl(dataUrl)
+      } catch (err) {
+        console.warn('[EduMap] original PNG snapshot failed:', err)
+      }
+    }
+    window.addEventListener('edumap-snapshot-original', handler)
+    return () => window.removeEventListener('edumap-snapshot-original', handler)
+  }, [getNodes, setOriginalPngDataUrl])
+
+  // [EduMap fix] 2026-04-23 (button consolidation): Listen for top-nav
+  // actions that need to reach the canvas. `edumap-fit-view` re-runs
+  // fitView (replacing the old in-canvas Fit button), and
+  // `edumap-toggle-add-node` flips add-node mode from the TopNav button
+  // via the shared store.
+  useEffect(() => {
+    const onFit = () => fitView({ duration: 400, padding: 0.2 })
+    window.addEventListener('edumap-fit-view', onFit)
+    return () => window.removeEventListener('edumap-fit-view', onFit)
+  }, [fitView])
+
+  // [EduMap fix] 2026-04-23 (drag-to-reparent): When the user finishes
+  // dragging a node, figure out where they dropped it and decide:
+  //   (a) re-parent under a different parent (dropped to the right of the
+  //       target node, i.e. into its child column), or
+  //   (b) re-order among siblings (dropped above / below a node that
+  //       shares the same parent, or directly above/below a node in the
+  //       same column as the dragged node's current parent's children),
+  //   (c) nothing — drop was too far from any other node or the move
+  //       would create a cycle.
+  //
+  // Strategy: scan every visible node except the dragged one; find the
+  // closest by distance from the dragged node's drop CENTER to the
+  // target's center. Then classify:
+  //   - If the drop center is further RIGHT than the target's right edge
+  //     by ≥ HALF_COL, treat it as "drop into target" → becomes child of
+  //     target, appended to the end of its children.
+  //   - Otherwise compare y against target's center y. If drop is ABOVE,
+  //     insert the dragged node as a sibling BEFORE target (under
+  //     target's parent). If BELOW, insert as sibling AFTER target.
+  //   - If we can't identify a target's parent (target is a root and the
+  //     drop would make the dragged node another root), default to
+  //     making dragged a child of target instead.
+  //
+  // We fire the store action even when the computed new position equals
+  // the old one — the layout pass will simply no-op visually, but the
+  // edited-flag still gets set, which matches the user's intent
+  // ("I moved this, so show me it's edited").
+  const COL_WIDTH_EST = 320
+  const NODE_W_EST = 200
+  const NODE_H_EST = 60
+
+  const onNodeDragStop = useCallback(
+    (_event: React.MouseEvent | MouseEvent | TouchEvent, draggedNode: Node) => {
+      // Gather every currently-visible node from React Flow's live state
+      // so we see the positions AFTER the drag finished.
+      const liveNodes = getNodes().filter((n) => !n.hidden)
+      const dragged = liveNodes.find((n) => n.id === draggedNode.id)
+      if (!dragged) return
+
+      // Center of the dragged node (approx — React Flow doesn't always
+      // have measured width/height during a drag, so fall back to our
+      // layout estimates which line up with the actual node CSS).
+      const dragW = dragged.measured?.width ?? NODE_W_EST
+      const dragH = dragged.measured?.height ?? NODE_H_EST
+      const dx = dragged.position.x + dragW / 2
+      const dy = dragged.position.y + dragH / 2
+
+      // Find the closest OTHER node. Guard against dropping onto a
+      // descendant of the dragged node (that would make a cycle) by
+      // skipping them up front.
+      const childMap = new Map<string, string[]>()
+      for (const e of edges) {
+        if (!childMap.has(e.source)) childMap.set(e.source, [])
+        childMap.get(e.source)!.push(e.target)
+      }
+      const forbidden = new Set<string>([dragged.id])
+      const stack = [dragged.id]
+      while (stack.length > 0) {
+        const id = stack.pop()!
+        for (const c of childMap.get(id) ?? []) {
+          if (!forbidden.has(c)) {
+            forbidden.add(c)
+            stack.push(c)
+          }
+        }
+      }
+
+      let closest: Node | null = null
+      let closestDist = Infinity
+      for (const n of liveNodes) {
+        if (forbidden.has(n.id)) continue
+        const nw = n.measured?.width ?? NODE_W_EST
+        const nh = n.measured?.height ?? NODE_H_EST
+        const nx = n.position.x + nw / 2
+        const ny = n.position.y + nh / 2
+        const d = Math.hypot(dx - nx, dy - ny)
+        if (d < closestDist) {
+          closestDist = d
+          closest = n
+        }
+      }
+
+      // If nothing close by — drop was into empty space: no-op.
+      if (!closest || closestDist > COL_WIDTH_EST * 1.5) return
+
+      const targetW = closest.measured?.width ?? NODE_W_EST
+      const targetH = closest.measured?.height ?? NODE_H_EST
+      const targetRight = closest.position.x + targetW
+      const targetCenterX = closest.position.x + targetW / 2
+      const targetCenterY = closest.position.y + targetH / 2
+
+      // Figure out target's parent (first incoming edge — mirrors the
+      // layout's "first edge wins" spanning tree).
+      let targetParentId: string | null = null
+      for (const e of edges) {
+        if (e.target === closest.id) {
+          targetParentId = e.source
+          break
+        }
+      }
+
+      // Classify drop mode by the horizontal relationship with the
+      // target. "Into child column" is where dx is well past the
+      // target's right edge.
+      const isIntoChildColumn =
+        dx > targetRight + COL_WIDTH_EST * 0.25 ||
+        // Also: very close on x, very close on y → treat as drop-onto.
+        (Math.abs(dx - targetCenterX) < targetW * 0.4 &&
+          Math.abs(dy - targetCenterY) < targetH * 0.4)
+
+      if (isIntoChildColumn || !targetParentId) {
+        // Become a child of the closest node, appended to the end.
+        const existingKids = childMap.get(closest.id) ?? []
+        reparentAndReorder(dragged.id, closest.id, existingKids.length)
+        return
+      }
+
+      // Otherwise, insert as sibling before/after target under
+      // target's parent. Determine position by comparing y against
+      // target's vertical center.
+      //
+      // [EduMap fix] 2026-04-23 (batch 5 #2): The `insertIndex` we hand to
+      // `reparentAndReorder` must be an index into the sibling list WITH
+      // the dragged node already removed — that's the list the store's
+      // splice will run against (it strips the incoming edge first).
+      // Previously we computed `targetIndex` against the full sibling list
+      // (which still includes the dragged node when moving within the same
+      // parent), and the resulting off-by-one meant intra-parent re-orders
+      // landed at the wrong slot (or at the end) and felt like "drag
+      // doesn't work". Filtering the dragged id out FIRST lines the two
+      // index spaces up.
+      const siblingIdsRaw = childMap.get(targetParentId) ?? []
+      const siblingIdsWithoutDragged = siblingIdsRaw.filter(
+        (s) => s !== dragged.id
+      )
+      const targetIndexInFiltered = siblingIdsWithoutDragged.indexOf(closest.id)
+      const insertAfter = dy > targetCenterY
+      const insertIndex =
+        targetIndexInFiltered < 0
+          ? siblingIdsWithoutDragged.length
+          : insertAfter
+            ? targetIndexInFiltered + 1
+            : targetIndexInFiltered
+
+      reparentAndReorder(dragged.id, targetParentId, insertIndex)
+    },
+    [edges, getNodes, reparentAndReorder]
+  )
 
   const hiddenCount = hiddenIds.size
 
@@ -388,6 +638,7 @@ function MindMapCanvasInner({
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         onNodeClick={handleNodeClick}
+        onNodeDragStop={onNodeDragStop}
         onPaneClick={onPaneClick}
         onDoubleClick={onPaneDoubleClick}
         nodeTypes={nodeTypes}
@@ -400,69 +651,23 @@ function MindMapCanvasInner({
         connectionLineStyle={{ stroke: '#3b82f6', strokeWidth: 2 }}
         defaultEdgeOptions={{ type: 'default' }}
         deleteKeyCode={['Delete', 'Backspace']}
-        selectionOnDrag
-        panOnDrag={[1, 2]}
+        selectionOnDrag={false}
+        panOnDrag={true}
       >
         <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#e2e8f0" />
         <Controls position="bottom-right" />
-        <MiniMap
-          nodeStrokeWidth={3}
-          nodeColor={(node) => {
-            if (node.type === 'rootNode') return '#1e293b'
-            if (node.type === 'branchNode') return '#3b82f6'
-            return '#94a3b8'
-          }}
-          position="top-right"
-          pannable
-          zoomable
-          className="!bg-white !border !border-slate-200 !rounded-lg !shadow-sm"
-        />
-        <Panel position="top-left" className="flex gap-2 flex-wrap">
-          <button
-            onClick={() => fitView({ duration: 400, padding: 0.2 })}
-            className="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-700 text-xs font-medium hover:bg-slate-50 shadow-sm transition-colors"
-            title="Fit all nodes in view"
-          >
-            ⊞ Fit
-          </button>
-          <button
-            onClick={() => setIsAddingNode(!isAddingNode)}
-            className={`px-3 py-1.5 rounded-lg border text-xs font-medium shadow-sm transition-colors ${
-              isAddingNode
-                ? 'bg-blue-600 border-blue-600 text-white'
-                : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
-            }`}
-            title="Toggle add-node mode"
-          >
-            ＋ Add Node
-          </button>
-          <button
-            onClick={handleExportPng}
-            className="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-700 text-xs font-medium hover:bg-slate-50 shadow-sm transition-colors"
-            title="Export as PNG"
-          >
-            📷 PNG
-          </button>
-          <button
-            onClick={handleExpandAll}
-            className="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-700 text-xs font-medium hover:bg-slate-50 shadow-sm transition-colors"
-            title="Expand all collapsed nodes"
-          >
-            ↔ Expand All
-          </button>
-          <button
-            onClick={handleCollapseAll}
-            className="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-700 text-xs font-medium hover:bg-slate-50 shadow-sm transition-colors"
-            title="Collapse all nodes to root"
-          >
-            ↕ Collapse All
-          </button>
-          {hiddenCount > 0 && (
+        {/* [EduMap fix] 2026-04-23: All action buttons (Fit, Add Node,
+            Expand All, Collapse All, Save, Copy, Export *) now live in the
+            TopNav. The canvas keeps only passive surface indicators —
+            a "hidden N nodes" counter and, when the user is in add-node
+            mode, the floating placement hint. */}
+        {hiddenCount > 0 && (
+          <Panel position="top-left">
             <span className="px-3 py-1.5 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 text-xs font-medium shadow-sm">
               {hiddenCount} node{hiddenCount !== 1 ? 's' : ''} hidden
             </span>
-          )}
-        </Panel>
+          </Panel>
+        )}
         {isAddingNode && (
           <Panel position="bottom-center">
             <div className="px-4 py-2 rounded-lg bg-blue-600 text-white text-xs font-medium shadow-lg animate-bounce">

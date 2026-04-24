@@ -10,24 +10,37 @@ interface ParsedNode {
   markdownLine: number
 }
 
-// [EduMap multimodal] Added 2026-04-21: Visual|Formula|Table are tags the LLM
-// attaches to multimodal-derived nodes (see llmService.ts EXTRACTION_SYSTEM).
-// We strip them so they don't leak into node labels; rendering them as
-// dedicated badges is intentionally left to a follow-up UI iteration.
-const TAG_REGEX = /\[(Hard|Low Priority|Important|Cross-Doc|New|Visual|Formula|Table)\]/gi
-const TAG_MAP: Record<string, NodeTag> = {
-  hard: 'hard',
-  'low priority': 'low-priority',
-  important: 'important',
+// [EduMap fix] 2026-04-23: Accept ANY `[Tag]` bracketed label, not just the
+// original fixed list. Users can now add custom tags like `[Easy]`,
+// `[Exam]`, `[Chapter-3]` and have them round-trip through markdown. The
+// regex is intentionally non-greedy and rejects newlines / other brackets
+// so we don't over-eagerly match real brackets in user prose. The LLM-
+// specific aliases (Visual/Formula/Table → important/hard/new) are kept
+// in `TAG_ALIAS` so extraction output still collapses into the familiar
+// preset palette, while everything else is preserved verbatim in a
+// lowercase-slug form so the same label always maps to the same tag.
+// Require at least one alpha character at the start so we don't mistake
+// math intervals (`[0, 1]`), footnote refs (`[1]`), or similar for tags.
+const TAG_REGEX = /\[([A-Za-z][A-Za-z0-9 \-_/&+.]{0,38})\]/g
+const TAG_ALIAS: Record<string, NodeTag> = {
   'cross-doc': 'important',
-  new: 'new',
-  // [EduMap multimodal] map the new multimodal tags to existing visual
-  // categories so the mind-map badge palette doesn't need to change. Visual-
-  // heavy nodes count as "important"; formula-heavy as "hard"; tables as "new"
-  // (temporary marker, can be swapped once we add dedicated badges).
   visual: 'important',
   formula: 'hard',
   table: 'new',
+}
+
+/**
+ * Canonicalise a user-supplied tag string into the slug form we store on
+ * the node (lowercase, spaces → hyphens, no trailing punctuation). Lookups
+ * and comparisons always use this form so "Low Priority" and "low priority"
+ * collapse to the same `low-priority` key.
+ */
+function slugifyTag(raw: string): string {
+  return raw
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9\-]/g, '')
 }
 
 // [EduMap fix] 2026-04-22: LLMs occasionally emit meta-headings that describe
@@ -185,13 +198,36 @@ function stripInlineMarkdown(text: string): string {
 
 function extractTags(text: string): { cleanText: string; tags: NodeTag[] } {
   const tags: NodeTag[] = []
-  const withoutTags = text.replace(TAG_REGEX, (_, tag: string) => {
-    const mapped = TAG_MAP[tag.toLowerCase()]
-    if (mapped && !tags.includes(mapped)) tags.push(mapped)
+  const withoutTags = text.replace(TAG_REGEX, (match, tag: string) => {
+    const slug = slugifyTag(tag)
+    if (!slug) return match // unrecognisable — leave it in the label
+    const resolved = TAG_ALIAS[slug] ?? slug
+    if (!tags.includes(resolved)) tags.push(resolved)
     return ''
   })
   const cleanText = stripInlineMarkdown(withoutTags).replace(/\s+/g, ' ').trim()
   return { cleanText, tags }
+}
+
+/**
+ * [EduMap fix] 2026-04-23: Render a tag slug back into the canonical
+ * `[Capitalised Label]` form for markdown output. Known presets get their
+ * pretty label; everything else falls back to title-casing the slug so
+ * `chapter-3` → `[Chapter 3]`.
+ */
+const PRESET_LABELS: Record<string, string> = {
+  hard: 'Hard',
+  easy: 'Easy',
+  important: 'Important',
+  'low-priority': 'Low Priority',
+  new: 'New',
+}
+function renderTag(slug: string): string {
+  if (PRESET_LABELS[slug]) return PRESET_LABELS[slug]
+  return slug
+    .split('-')
+    .map((w) => (w ? w[0].toUpperCase() + w.slice(1) : ''))
+    .join(' ')
 }
 
 /**
@@ -617,12 +653,11 @@ export function reactFlowToMarkdown(nodes: MindMapNode[], edges: MindMapEdge[]):
     if (!node) return
 
     const data = node.data as MindMapNodeData
-    const tagStr = data.tags?.map((t) => {
-      if (t === 'hard') return ' [Hard]'
-      if (t === 'low-priority') return ' [Low Priority]'
-      if (t === 'important') return ' [Important]'
-      return ''
-    }).join('') ?? ''
+    // [EduMap fix] 2026-04-23: Emit EVERY tag, not just the original three
+    // presets. Previously `new` and any custom tag the user added were
+    // silently dropped on save. Now we render each one as `[Pretty Label]`
+    // so the sidebar markdown round-trips cleanly.
+    const tagStr = data.tags?.map((t) => ` [${renderTag(t)}]`).join('') ?? ''
 
     if (depth <= 6) {
       lines.push(`${'#'.repeat(depth)} ${data.label}${tagStr}`)

@@ -11,11 +11,14 @@ export default function MainEditor() {
   const store = useMindMapStore()
   const initialized = useRef(false)
 
-  // Initialize with sample data
+  // Initialize with sample data. Use the LLM-source variant so the
+  // sample markdown becomes the "original" baseline — otherwise the very
+  // first session has no original, and the TopNav Original export items
+  // would be silently missing.
   useEffect(() => {
     if (initialized.current) return
     initialized.current = true
-    store.updateFromMarkdown(SAMPLE_MARKDOWN)
+    store.updateFromLLMMarkdown(SAMPLE_MARKDOWN)
   }, [])
 
   // Handle markdown changes from editor → update mind map
@@ -26,16 +29,9 @@ export default function MainEditor() {
     [store]
   )
 
-  // Handle save
-  const handleSave = useCallback(() => {
-    store.updateFromGraph()
-    console.log('Saved. Markdown synced with mind map.')
-  }, [store])
-
-  // Handle copy
-  const handleCopyMarkdown = useCallback(() => {
-    navigator.clipboard.writeText(store.markdown)
-  }, [store])
+  // [EduMap fix] 2026-04-23: Save + Copy are now owned by App.tsx (so the
+  // TopNav can fire them) and produce a transient toast for feedback.
+  // This component just has to not re-duplicate the wiring.
 
   // Handle PDF upload → process with agents
   const handleDocumentsReady = useCallback(
@@ -47,35 +43,33 @@ export default function MainEditor() {
         const result = await processDocumentsWithAgents(docs, (tasks) => {
           store.setAgentTasks(tasks)
         }, prompt)
-        store.updateFromMarkdown(result.markdown)
+        // [EduMap fix] 2026-04-23: Route LLM output through
+        // `updateFromLLMMarkdown` so this markdown becomes the new
+        // "original" baseline (for the TopNav Original export) and the
+        // edit tracking resets to a clean slate.
+        store.updateFromLLMMarkdown(result.markdown)
+        // Trigger the canvas to snapshot its freshly-rendered state into
+        // `originalPngDataUrl`. We dispatch once on the next paint frame
+        // so the canvas' fitView has already settled, then again after a
+        // beat in case the first render didn't land in time.
+        requestAnimationFrame(() => {
+          window.dispatchEvent(new CustomEvent('edumap-snapshot-original'))
+        })
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('edumap-snapshot-original'))
+        }, 900)
       } catch (err) {
-        // [EduMap multimodal] 2026-04-21: Make the LLM failure visible.
-        // The mindmap parser only keeps headings/bullets, so multi-line
-        // errors get truncated when crammed into a single `##`. Split by
-        // newline and render each line as its own node so the actual
-        // OpenAI error (e.g. "model 'gpt-5' does not exist") is visible.
+        // [EduMap fix] 2026-04-23: Surface extraction failures as a
+        // dismissable banner above the canvas instead of cramming the
+        // error text into fake mind map nodes. Previously the fallback
+        // built a pseudo-markdown ("# ⚠️ Mind map generation failed" +
+        // the raw error as headings) which made the canvas look like it
+        // had successfully produced a map from garbage input. Now the
+        // canvas is left untouched (or empty) and the user sees a clear
+        // red banner explaining what actually failed.
         console.error('Document processing failed:', err)
         const msg = err instanceof Error ? err.message : String(err)
-        const errorLines = msg
-          .split(/\r?\n/)
-          .map((l) => l.trim())
-          .filter(Boolean)
-        const errorHeadings = errorLines.length > 0
-          ? errorLines.map((line, i) => `${i === 0 ? '##' : '###'} ${line}`).join('\n')
-          : '## Unknown error'
-        const fallbackMd = [
-          `# ⚠️ Mind map generation failed`,
-          ``,
-          errorHeadings,
-          ``,
-          `## Debugging`,
-          `### Open browser DevTools > Console for the full error`,
-          `### Check API server logs (the terminal running dev:server)`,
-          `### Verify OPENAI_API_KEY and OPENAI_MODEL are correct in .env`,
-          ``,
-          ...docs.map((d) => `## ${d.name}\n\n${d.text.slice(0, 1500)}`),
-        ].join('\n')
-        store.updateFromMarkdown(fallbackMd)
+        store.setError(msg || 'Unknown error while generating the mind map.')
       } finally {
         store.setIsProcessing(false)
       }
@@ -127,20 +121,9 @@ export default function MainEditor() {
     [store]
   )
 
-  // Export handlers
-  const handleExportPng = useCallback(() => {
-    // Triggered by MindMapCanvas internally
-  }, [])
-
-  const handleExportMarkdown = useCallback(() => {
-    const blob = new Blob([store.markdown], { type: 'text/markdown' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'edumap-mindmap.md'
-    a.click()
-    URL.revokeObjectURL(url)
-  }, [store])
+  // [EduMap fix] 2026-04-23: Export handlers removed along with the
+  // footer buttons — both PNG and Markdown export now live exclusively
+  // in the TopNav (see App.tsx: `handleExportImage`, `handleExportMarkdown`).
 
   return (
     <>
@@ -148,8 +131,8 @@ export default function MainEditor() {
         <MarkdownEditorPanel
           value={store.markdown}
           onChange={handleMarkdownChange}
-          onSave={handleSave}
-          onCopyMarkdown={handleCopyMarkdown}
+          onSave={() => {}}
+          onCopyMarkdown={() => {}}
           onNodeClick={handleNodeClickFromEditor}
           highlightedNodeId={store.highlightedNodeId}
           nodes={store.nodes}
@@ -174,6 +157,39 @@ export default function MainEditor() {
             </div>
           </div>
 
+          {/* [EduMap fix] 2026-04-23: Error banner for failed extractions.
+              Displayed above the canvas instead of rendering the error as
+              fake mind map nodes (which used to make broken states look
+              like successful outputs). */}
+          {store.error && (
+            <div
+              role="alert"
+              className="flex items-start gap-3 mx-4 mt-3 px-4 py-3 rounded-lg border border-red-200 bg-red-50 text-red-900 shadow-sm"
+            >
+              <span className="text-lg leading-none select-none" aria-hidden="true">⚠️</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold">Mind map generation failed</p>
+                <p className="text-xs mt-1 text-red-800 break-words whitespace-pre-wrap">
+                  {store.error}
+                </p>
+                <p className="text-[11px] mt-2 text-red-700/80">
+                  Open DevTools › Console for the full stack trace, or check the
+                  dev server terminal. Verify your <code className="font-mono">OPENAI_API_KEY</code>
+                  {' '}and <code className="font-mono">OPENAI_MODEL</code> in <code className="font-mono">.env</code>.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => store.setError(null)}
+                className="shrink-0 text-red-700 hover:text-red-900 text-sm font-bold px-2 py-0.5 rounded hover:bg-red-100 transition-colors"
+                title="Dismiss"
+                aria-label="Dismiss error"
+              >
+                ×
+              </button>
+            </div>
+          )}
+
           {/* Mind map canvas */}
           <div className="flex-1 min-h-0">
             {store.nodes.length > 0 ? (
@@ -185,13 +201,16 @@ export default function MainEditor() {
                 onNodeClick={handleNodeClickFromMap}
                 onNodeLabelChange={handleNodeLabelChange}
                 highlightedNodeId={store.highlightedNodeId}
-                onExportPng={handleExportPng}
               />
             ) : (
               <div className="flex items-center justify-center h-full min-h-[400px] text-slate-500">
                 <div className="text-center">
                   <div className="text-5xl mb-3">🧠</div>
-                  <p className="font-medium">Upload PDFs or edit markdown to generate a mind map</p>
+                  <p className="font-medium">
+                    {store.error
+                      ? 'No mind map — see the error above'
+                      : 'Upload PDFs or edit markdown to generate a mind map'}
+                  </p>
                   <p className="text-sm mt-1 text-slate-400">
                     Drag nodes to rearrange · Draw connections between nodes
                   </p>
@@ -200,26 +219,10 @@ export default function MainEditor() {
             )}
           </div>
 
-          {/* Export footer */}
-          <div className="p-4 border-t border-surface-border shrink-0">
-            <p className="text-sm font-medium text-slate-700 mb-2">Export Final Mind Map</p>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={handleExportPng}
-                className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors"
-              >
-                📷 PNG
-              </button>
-              <button
-                type="button"
-                onClick={handleExportMarkdown}
-                className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors"
-              >
-                📄 Markdown
-              </button>
-            </div>
-          </div>
+          {/* [EduMap fix] 2026-04-23: Removed the "Export Final Mind Map"
+              footer. Both actions are duplicates of the TopNav's
+              "Export Image" and "Export Markdown" buttons — keeping a
+              single, always-visible location at the top of the app. */}
         </section>
       </div>
 
