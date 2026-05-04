@@ -68,6 +68,14 @@ interface MindMapStore {
    * paint the crosshair cursor + placement banner).
    */
   isAddingNode: boolean
+  /**
+   * Snapshot for undoing destructive actions (delete, duplicate).
+   */
+  undoSnapshot: { nodes: MindMapNode[]; edges: MindMapEdge[]; markdown: string } | null
+  /**
+   * Transient toast message specifically for undo actions.
+   */
+  undoToastMessage: string | null
 
   // Actions
   setMarkdown: (md: string) => void
@@ -138,6 +146,22 @@ interface MindMapStore {
     newParentId: string | null,
     insertIndex: number
   ) => void
+  /**
+   * Add a child node to the specified parent.
+   */
+  addChildNode: (parentId: string) => void
+  /**
+   * Delete a node and its entire subtree.
+   */
+  deleteNode: (nodeId: string) => void
+  /**
+   * Restore the last undo snapshot.
+   */
+  undoLastAction: () => void
+  /**
+   * Clear the undo snapshot.
+   */
+  clearUndo: () => void
 }
 
 /**
@@ -181,6 +205,8 @@ export const useMindMapStore = create<MindMapStore>((set, get) => ({
   originalPngDataUrl: null,
   saveToastMessage: null,
   isAddingNode: false,
+  undoSnapshot: null,
+  undoToastMessage: null,
 
   setMarkdown: (md) => set({ markdown: md }),
 
@@ -521,4 +547,119 @@ export const useMindMapStore = create<MindMapStore>((set, get) => ({
         editedNodeIds: nextEdited,
       }
     }),
+
+  addChildNode: (parentId) =>
+    set((state) => {
+      const parent = state.nodes.find((n) => n.id === parentId)
+      if (!parent) return {}
+
+      const parentDepth = (parent.data as MindMapNodeData).depth ?? 1
+      const childDepth = parentDepth + 1
+      const newId = `node-${Date.now()}`
+
+      const newNode: MindMapNode = {
+        id: newId,
+        type: 'leafNode',
+        position: { x: 0, y: 0 },
+        data: {
+          label: 'New Concept',
+          depth: childDepth,
+          parentId,
+          tags: [],
+          isCollapsed: false,
+        } as MindMapNodeData,
+      }
+
+      const newEdge: MindMapEdge = {
+        id: `edge-${parentId}-${newId}`,
+        source: parentId,
+        target: newId,
+        type: 'default',
+        style: { stroke: '#94a3b8', strokeWidth: 2 },
+        animated: false,
+      }
+
+      const nextNodes = [...state.nodes, newNode]
+      const nextEdges = [...state.edges, newEdge]
+      
+      const laidOut = layoutNodes(nextNodes, nextEdges)
+      const md = reactFlowToMarkdown(laidOut, nextEdges)
+
+      const nextEdited = new Set(state.editedNodeIds)
+      nextEdited.add(newId)
+
+      const nextCollapsed = new Set(state.collapsedNodeIds)
+      nextCollapsed.delete(parentId)
+
+      return {
+        nodes: laidOut,
+        edges: nextEdges,
+        markdown: md,
+        editedNodeIds: nextEdited,
+        highlightedNodeId: newId,
+        collapsedNodeIds: nextCollapsed,
+      }
+    }),
+
+  deleteNode: (nodeId) =>
+    set((state) => {
+      // Build child map
+      const childMap = new Map<string, string[]>()
+      for (const e of state.edges) {
+        if (!childMap.has(e.source)) childMap.set(e.source, [])
+        childMap.get(e.source)!.push(e.target)
+      }
+
+      // Collect node and all descendants
+      const toDelete = new Set<string>()
+      const stack = [nodeId]
+      while (stack.length > 0) {
+        const id = stack.pop()!
+        if (toDelete.has(id)) continue
+        toDelete.add(id)
+        for (const c of childMap.get(id) ?? []) stack.push(c)
+      }
+
+      // Save undo snapshot
+      const undoSnapshot = {
+        nodes: state.nodes,
+        edges: state.edges,
+        markdown: state.markdown,
+      }
+
+      const nextNodes = state.nodes.filter((n) => !toDelete.has(n.id))
+      const nextEdges = state.edges.filter(
+        (e) => !toDelete.has(e.source) && !toDelete.has(e.target)
+      )
+
+      const laidOut = layoutNodes(nextNodes, nextEdges)
+      const md = reactFlowToMarkdown(laidOut, nextEdges)
+
+      const nextEdited = new Set(state.editedNodeIds)
+      // Since nodes are deleted, no need to add them to editedNodeIds,
+      // but maybe mark parent as edited? Actually deleting changes the tree, so markdown diff handles it.
+
+      return {
+        nodes: laidOut,
+        edges: nextEdges,
+        markdown: md,
+        editedNodeIds: nextEdited,
+        undoSnapshot,
+        undoToastMessage: `Deleted "${state.nodes.find(n => n.id === nodeId)?.data.label}"`,
+      }
+    }),
+
+  undoLastAction: () =>
+    set((state) => {
+      if (!state.undoSnapshot) return {}
+      return {
+        nodes: state.undoSnapshot.nodes,
+        edges: state.undoSnapshot.edges,
+        markdown: state.undoSnapshot.markdown,
+        undoSnapshot: null,
+        undoToastMessage: null,
+      }
+    }),
+
+  clearUndo: () => set({ undoSnapshot: null, undoToastMessage: null }),
 }))

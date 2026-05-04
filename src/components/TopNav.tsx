@@ -149,16 +149,18 @@ function IconButton({
   onClick,
   children,
   active = false,
+  disabled = false,
   accent = 'slate',
 }: {
   title: string
   onClick: () => void
   children: React.ReactNode
   active?: boolean
-  accent?: 'slate' | 'blue' | 'green'
+  disabled?: boolean
+  accent?: 'slate' | 'blue' | 'green' | 'red'
 }) {
   const base =
-    'h-8 px-2.5 rounded-lg border text-xs font-medium inline-flex items-center gap-1.5 transition-colors'
+    'h-8 px-2.5 rounded-lg border text-xs font-medium inline-flex items-center gap-1.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
   let cls: string
   if (active) {
     cls = 'bg-blue-600 border-blue-600 text-white hover:bg-blue-700'
@@ -166,6 +168,8 @@ function IconButton({
     cls = 'bg-white border-blue-200 text-blue-700 hover:bg-blue-50'
   } else if (accent === 'green') {
     cls = 'bg-white border-emerald-200 text-emerald-700 hover:bg-emerald-50'
+  } else if (accent === 'red') {
+    cls = 'bg-white border-red-200 text-red-700 hover:bg-red-50'
   } else {
     cls = 'bg-white border-surface-border text-slate-700 hover:bg-slate-50'
   }
@@ -173,7 +177,9 @@ function IconButton({
     <button
       type="button"
       onClick={onClick}
+      disabled={disabled}
       title={title}
+      aria-label={title}
       className={`${base} ${cls}`}
     >
       {children}
@@ -294,13 +300,16 @@ export default function TopNav({
   onExpandAll,
   onCollapseAll,
   onShowUpToLevel,
-  onToggleAddNode,
-  isAddingNode,
+  highlightedNodeId,
+  onAddChildNode,
+  onDeleteNode,
 }: TopNavProps) {
+  const hasSelection = !!highlightedNodeId
+
   return (
     <header className="h-14 border-b border-surface-border bg-panel flex items-center justify-between px-4 shrink-0 gap-3">
       <div className="flex items-center gap-3 min-w-0">
-        <Link to="/" className="flex items-center gap-2 text-primary font-semibold shrink-0">
+        <Link to="/" className="flex items-center gap-2 text-primary font-semibold shrink-0" aria-label="EduMap Home">
           <EduMapLogo />
           <span>EduMap</span>
         </Link>
@@ -347,12 +356,23 @@ export default function TopNav({
             onExpandAll={onExpandAll}
             onCollapseAll={onCollapseAll}
           />
+
+          <div className="w-px h-5 bg-slate-200 mx-1"></div>
           <IconButton
-            title="Toggle add-node placement mode"
-            onClick={onToggleAddNode}
-            active={isAddingNode}
+            title={hasSelection ? "Add a child node to the selected node" : "Select a node to add a child"}
+            onClick={onAddChildNode}
+
+            disabled={!hasSelection}
           >
             ＋ Add
+          </IconButton>
+          <IconButton
+            title={hasSelection ? "Delete the selected node" : "Select a node to delete"}
+            onClick={onDeleteNode}
+            disabled={!hasSelection}
+            accent="red"
+          >
+            🗑 Delete
           </IconButton>
         </div>
       </div>
@@ -386,6 +406,8 @@ export default function TopNav({
         <div
           className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 ml-2 flex items-center justify-center text-white text-xs font-bold"
           title="Profile"
+          role="img"
+          aria-label="User Profile"
         >
           U
         </div>
