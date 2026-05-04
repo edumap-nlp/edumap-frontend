@@ -266,6 +266,13 @@ function CollapseToggle({
             : 'Expand subtree'
           : 'Collapse subtree'
       }
+      aria-label={
+        isCollapsed
+          ? childCount !== undefined && childCount > 0
+            ? `Expand (${childCount} node${childCount !== 1 ? 's' : ''} hidden)`
+            : 'Expand subtree'
+          : 'Collapse subtree'
+      }
       style={{ right: '-18px' }}
     >
       {isCollapsed ? '▶' : '▼'}

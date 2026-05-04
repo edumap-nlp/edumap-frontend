@@ -202,6 +202,7 @@ function App() {
           <button
             onClick={undoLastAction}
             className="text-blue-400 hover:text-blue-300 font-semibold px-2 py-0.5 rounded hover:bg-slate-800 transition-colors"
+            aria-label="Undo last action"
           >
             Undo
           </button>
@@ -212,12 +213,15 @@ function App() {
         <div
           className="fixed inset-0 z-[1000] flex items-center justify-center bg-slate-900/40 nodrag nopan"
           onClick={cancelDelete}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-dialog-title"
         >
           <div
             className="bg-white rounded-xl shadow-2xl p-5 max-w-xs w-full text-center animate-[fadeIn_0.15s_ease-out]"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-sm font-semibold text-slate-900 mb-2">Delete node?</h3>
+            <h3 id="delete-dialog-title" className="text-sm font-semibold text-slate-900 mb-2">Delete node?</h3>
             <p className="text-xs text-slate-500 mb-5">
               "{store.nodes.find(n => n.id === store.highlightedNodeId)?.data.label}" and its subtree will be removed.
             </p>

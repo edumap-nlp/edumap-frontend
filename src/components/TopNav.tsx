@@ -179,6 +179,7 @@ function IconButton({
       onClick={onClick}
       disabled={disabled}
       title={title}
+      aria-label={title}
       className={`${base} ${cls}`}
     >
       {children}
@@ -308,7 +309,7 @@ export default function TopNav({
   return (
     <header className="h-14 border-b border-surface-border bg-panel flex items-center justify-between px-4 shrink-0 gap-3">
       <div className="flex items-center gap-3 min-w-0">
-        <Link to="/" className="flex items-center gap-2 text-primary font-semibold shrink-0">
+        <Link to="/" className="flex items-center gap-2 text-primary font-semibold shrink-0" aria-label="EduMap Home">
           <EduMapLogo />
           <span>EduMap</span>
         </Link>
@@ -405,6 +406,8 @@ export default function TopNav({
         <div
           className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 ml-2 flex items-center justify-center text-white text-xs font-bold"
           title="Profile"
+          role="img"
+          aria-label="User Profile"
         >
           U
         </div>
