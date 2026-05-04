@@ -2,10 +2,11 @@ import { Routes, Route } from 'react-router-dom'
 import MainEditor from './pages/MainEditor'
 import TopNav from './components/TopNav'
 import { useMindMapStore } from './hooks/useMindMapStore'
-import { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 function App() {
   const store = useMindMapStore()
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false)
 
   /**
    * [EduMap fix] 2026-04-23: Unified image-export handler.
@@ -104,6 +105,48 @@ function App() {
     return () => clearTimeout(t)
   }, [saveToastMessage, hideSaveToast])
 
+  const undoToastMessage = store.undoToastMessage
+  const undoLastAction = store.undoLastAction
+  const clearUndo = store.clearUndo
+
+  useEffect(() => {
+    if (!undoToastMessage) return
+    const t = setTimeout(() => clearUndo(), 5000)
+    return () => clearTimeout(t)
+  }, [undoToastMessage, clearUndo])
+
+  const handleAddChildNode = useCallback(() => {
+    if (store.highlightedNodeId) {
+      store.addChildNode(store.highlightedNodeId)
+    }
+  }, [store])
+
+  const handleDeleteNode = useCallback(() => {
+    if (!store.highlightedNodeId) return
+    const node = store.nodes.find(n => n.id === store.highlightedNodeId)
+    if (!node) return
+    
+    // Check if the node has any children by looking at the edges
+    const hasChildren = store.edges.some(e => e.source === store.highlightedNodeId)
+    
+    if (hasChildren) {
+      setShowConfirmDelete(true)
+    } else {
+      store.deleteNode(store.highlightedNodeId)
+    }
+  }, [store])
+
+  const confirmDelete = useCallback(() => {
+    if (store.highlightedNodeId) {
+      store.deleteNode(store.highlightedNodeId)
+    }
+    setShowConfirmDelete(false)
+  }, [store])
+
+  const cancelDelete = useCallback(() => {
+    setShowConfirmDelete(false)
+  }, [])
+
   return (
     <div className="min-h-screen flex flex-col bg-surface">
       <TopNav
@@ -123,6 +166,9 @@ function App() {
         onShowUpToLevel={store.showUpToLevel}
         onToggleAddNode={store.toggleIsAddingNode}
         isAddingNode={store.isAddingNode}
+        highlightedNodeId={store.highlightedNodeId}
+        onAddChildNode={handleAddChildNode}
+        onDeleteNode={handleDeleteNode}
       />
       <main className="flex-1 flex flex-col">
         <Routes>
@@ -141,6 +187,55 @@ function App() {
             <polyline points="20 6 9 17 4 12" />
           </svg>
           {store.saveToastMessage}
+        </div>
+      )}
+
+      {store.undoToastMessage && (
+        <div
+          role="status"
+          className="fixed bottom-6 left-6 z-50 px-4 py-2.5 rounded-lg bg-slate-900 text-white text-sm font-medium shadow-lg flex items-center gap-4 animate-[fadeIn_0.15s_ease-out]"
+        >
+          <span className="flex items-center gap-2">
+            <svg className="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
+            {store.undoToastMessage}
+          </span>
+          <button
+            onClick={undoLastAction}
+            className="text-blue-400 hover:text-blue-300 font-semibold px-2 py-0.5 rounded hover:bg-slate-800 transition-colors"
+          >
+            Undo
+          </button>
+        </div>
+      )}
+
+      {showConfirmDelete && store.highlightedNodeId && (
+        <div
+          className="fixed inset-0 z-[1000] flex items-center justify-center bg-slate-900/40 nodrag nopan"
+          onClick={cancelDelete}
+        >
+          <div
+            className="bg-white rounded-xl shadow-2xl p-5 max-w-xs w-full text-center animate-[fadeIn_0.15s_ease-out]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-sm font-semibold text-slate-900 mb-2">Delete node?</h3>
+            <p className="text-xs text-slate-500 mb-5">
+              "{store.nodes.find(n => n.id === store.highlightedNodeId)?.data.label}" and its subtree will be removed.
+            </p>
+            <div className="flex gap-2 justify-center">
+              <button
+                className="px-3 py-1.5 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg"
+                onClick={cancelDelete}
+              >
+                Cancel
+              </button>
+              <button
+                className="px-3 py-1.5 text-xs font-medium text-white bg-red-500 hover:bg-red-600 rounded-lg shadow-sm"
+                onClick={confirmDelete}
+              >
+                Delete all
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

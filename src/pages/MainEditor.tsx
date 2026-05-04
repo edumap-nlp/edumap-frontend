@@ -81,8 +81,6 @@ export default function MainEditor() {
   const handleNodeClickFromMap = useCallback(
     (nodeId: string) => {
       store.highlightNode(nodeId)
-      // Clear after animation
-      setTimeout(() => store.highlightNode(null), 2500)
     },
     [store]
   )
@@ -91,8 +89,6 @@ export default function MainEditor() {
   const handleNodeClickFromEditor = useCallback(
     (nodeId: string) => {
       store.highlightNode(nodeId)
-      // Clear after animation
-      setTimeout(() => store.highlightNode(null), 2500)
     },
     [store]
   )

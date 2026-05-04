@@ -250,6 +250,9 @@ export interface TopNavProps {
   onShowUpToLevel: (maxDepth: number | null) => void
   onToggleAddNode: () => void
   isAddingNode: boolean
+  highlightedNodeId: string | null
+  onAddChildNode: () => void
+  onDeleteNode: () => void
 }
 
 export type ProviderStatus = {

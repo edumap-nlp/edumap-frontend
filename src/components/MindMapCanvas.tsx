@@ -119,6 +119,7 @@ function MindMapCanvasInner({
   // [EduMap fix] 2026-04-23 (drag-to-reparent): action used by
   // `onNodeDragStop` below to splice the dragged node into its new parent.
   const reparentAndReorder = useMindMapStore((s) => s.reparentAndReorder)
+  const highlightNodeStoreAction = useMindMapStore((s) => s.highlightNode)
 
   // [EduMap fix] 2026-04-22: Sync external node/edge changes in a SINGLE
   // effect so nodes and edges always land in the internal state together.
@@ -219,6 +220,7 @@ function MindMapCanvasInner({
           ? countDescendants(n.id, childMap, descendantCache)
           : 0
         const isEdited = editedNodeIds.has(n.id)
+        const isHighlighted = n.id === highlightedNodeId
         return {
           ...n,
           data: {
@@ -227,10 +229,11 @@ function MindMapCanvasInner({
             isCollapsed,
             descendantCount,
             isEdited,
+            isHighlighted,
           } as MindMapNodeData,
         }
       })
-  }, [nodes, hiddenIds, childMap, collapsedNodeIds, editedNodeIds])
+  }, [nodes, hiddenIds, childMap, collapsedNodeIds, editedNodeIds, highlightedNodeId])
 
   const visibleEdges = useMemo(
     () => edges.filter((e) => !hiddenIds.has(e.source) && !hiddenIds.has(e.target)),
@@ -315,11 +318,14 @@ function MindMapCanvasInner({
 
   const onPaneClick = useCallback(
     (event: React.MouseEvent) => {
-      if (!isAddingNode) return
+      if (!isAddingNode) {
+        highlightNodeStoreAction(null)
+        return
+      }
       const position = screenToFlowPosition({ x: event.clientX, y: event.clientY })
       addNewNode(position.x, position.y)
     },
-    [isAddingNode, screenToFlowPosition, addNewNode]
+    [isAddingNode, screenToFlowPosition, addNewNode, highlightNodeStoreAction]
   )
 
   const handleNodeClick: NodeMouseHandler = useCallback(
@@ -347,24 +353,8 @@ function MindMapCanvasInner({
       if (!target) return
 
       setCenter(target.position.x + 80, target.position.y + 25, { duration: 600, zoom: 1.5 })
-
-      setNodes((nds) =>
-        nds.map((n) => ({
-          ...n,
-          data: { ...n.data, isHighlighted: n.id === nodeId } as MindMapNodeData,
-        }))
-      )
-
-      setTimeout(() => {
-        setNodes((nds) =>
-          nds.map((n) => ({
-            ...n,
-            data: { ...n.data, isHighlighted: false } as MindMapNodeData,
-          }))
-        )
-      }, 2000)
     },
-    [getNodes, setCenter, setNodes]
+    [getNodes, setCenter]
   )
 
   const prevHighlightRef = useRef<string | null>(null)
