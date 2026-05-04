@@ -1,5 +1,5 @@
 import { memo, useState, useCallback, useRef, useEffect } from 'react'
-import { Handle, Position, type NodeProps } from '@xyflow/react'
+import { Handle, Position, type NodeProps, NodeToolbar } from '@xyflow/react'
 import type { MindMapNodeData, NodeTag } from '../types'
 import { PREDEFINED_TAGS } from '../types'
 import { useMindMapStore } from '../hooks/useMindMapStore'
@@ -155,12 +155,13 @@ function TagEditor({
         + tag
       </button>
       {open && (
-        <div
-          role="dialog"
-          className="absolute left-0 top-full mt-1 z-30 w-56 rounded-lg border border-surface-border bg-white shadow-lg p-2"
-          onMouseDown={(e) => e.stopPropagation()}
-          onClick={(e) => e.stopPropagation()}
-        >
+        <NodeToolbar isVisible={open} position={Position.Bottom} className="z-50 !p-0 !m-0">
+          <div
+            role="dialog"
+            className="w-56 rounded-lg border border-surface-border bg-white shadow-lg p-2"
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+          >
           <div className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider mb-1">
             Presets
           </div>
@@ -218,7 +219,8 @@ function TagEditor({
               Add
             </button>
           </div>
-        </div>
+          </div>
+        </NodeToolbar>
       )}
     </div>
   )
