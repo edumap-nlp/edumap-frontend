@@ -1,0 +1,2351 @@
+Quantum Volunteer’s Dilemma
+Dax Enshan Koh ∗1,2,3, Kaavya Kumar †3,4, and Siong Thye Goh ‡1,3,5
+1
+A*STAR Quantum Innovation Centre (Q.InC), Institute of High Performance Computing (IHPC), Agency for
+Science, Technology and Research (A*STAR), 1 Fusionopolis Way, #16-16 Connexis, Singapore 138632, Singapore
+2Science, Mathematics and Technology Cluster, Singapore University of Technology and Design, 8 Somapah Road,
+Singapore 487372, Singapore
+3Institute of High Performance Computing (IHPC), Agency for Science, Technology and Research (A*STAR), 1
+Fusionopolis Way, #16-16 Connexis, Singapore 138632, Singapore
+4United World College South East Asia East Campus, 1 Tampines Street 73, Singapore 528704, Singapore
+5Singapore Management University, 81 Victoria St, Singapore 188065, Singapore
+Abstract
+The volunteer’s dilemma is a well-known game in game theory that models the conflict players face
+when deciding whether to volunteer for a collective benefit, knowing that volunteering incurs a personal
+cost. In this work, we introduce a quantum variant of the classical volunteer’s dilemma, generalizing it
+by allowing players to utilize quantum strategies. Employing the Eisert–Wilkens–Lewenstein quantization
+framework, we analyze a multiplayer quantum volunteer’s dilemma scenario with an arbitrary number of
+players,wherethecostofvolunteeringissharedequallyamongthevolunteers. Wederiveanalyticalexpres-
+sions for the players’ expected payoffs and demonstrate the quantum game’s advantage over the classical
+game. In particular, we prove that the quantum volunteer’s dilemma possesses symmetric Nash equilibria
+with larger expected payoffs compared to the unique symmetric Nash equilibrium of the classical game,
+wherein players use mixed strategies. Furthermore, we show that the quantum Nash equilibria we identify
+are Pareto optimal. Our findings reveal distinct dynamics in volunteer’s dilemma scenarios when players
+adhere to quantum rules, underscoring a strategic advantage of decision-making in quantum settings.
+Keywords: Volunteer’s dilemma · Symmetric volunteer’s dilemma with cost sharing · Quantum game
+theory · Eisert–Wilkens–Lewenstein scheme · Quantum strategies · Nash equilibrium · Pareto optimality
+1 Introduction
+The volunteer’s dilemma, first introduced by Diekmann in 1985 [1], is a famous n-player game in game theory,
+wherein players must decide whether or not to volunteer and incur a personal cost for the benefit of the
+entire group. This dilemma encapsulates numerous real-world social traps [2] and explains various human
+behaviors [3–7], such as the bystander effect [8–13], free-riding [14–16], diffusion of responsibility [17–20], and
+the NIMBY (‘not in my backyard’) syndrome [21,22]. The dilemma also extends beyond human interactions
+to non-human animal behaviors such as the transmission of predator information [3,23–30]. Animals that
+volunteer to transmit such information may inadvertently alert the predator and put themselves at risk to
+benefit the group, as seen in species like sooty mangabeys [25] and guppies [30]. This dilemma also occurs
+in cancer cells [31–33] and microbial populations [34,35]. For instance, during toxin production in bacteria,
+each bacterium faces a decision: to either pay the metabolic cost of producing a toxin to reach the necessary
+threshold for successful invasion of the host, or rely on another bacterium to bear the cost [35].
+Overthelastfewdecades,extensiveresearchhasbeenconductedonthevolunteer’sdilemma,withtheoretical
+studies characterizing various properties of the game [10,36,37], and experimental investigations exploring the
+factors influencing volunteering choices and how closely actual behavior aligns with theoretical predictions
+[2,14,19,38–49]. Various versions of the dilemma have been studied, including Diekmann’s original symmetric
+volunteer’s dilemma [1], where volunteers all incur the same cost and players all receive the same benefit;
+the asymmetric volunteer’s dilemma [46,50–53], which allows volunteers to incur different costs and players
+to receive different benefits; the threshold volunteer’s dilemma [54,55], which requires a threshold number of
+volunteersforproducingthebenefit;andthevolunteer’stimingdilemma[36,51],whereplayerscanobserveeach
+other’s actions and wait for someone else to volunteer, potentially leading to a state of mamihlapinatapai [56].
+∗dax_koh@ihpc.a-star.edu.sg
+†kaavya.kumars@gmail.com
+‡gohst2@ihpc.a-star.edu.sg
+1
+4202
+peS
+9
+]hp-tnauq[
+1v80750.9042:viXra
+
+One significant volunteer’s dilemma variant, introduced by Weesie and Franzen in 1998 [57], involves cost-
+sharingamongvolunteers. Inthisvariant,thecostincurredbythevolunteersisdividedamongstthem,making
+itmoreapplicabletomanyreal-lifescenarios[57,58]. Forexample,whencountriesshareapollutedwaterbody,
+theyallbenefitifonecountrydecidestobearthecleaningcosts;however,theburdencanbereducedifmultiple
+countries share the expense [59,60]. Another scenario involves saving a drowning child, where a group rescue
+is less risky than an individual effort [58].
+In this study, we introduce a volunteer’s dilemma setting governed by the laws of quantum mechanics,
+wheretheoutcomesofaquantummeasurementperformedonanentangledquantumsystemdeterminewhether
+players volunteer, with each player having the ability to manipulate their local part of the system before the
+measurement. Whiletherearevariouswaystorealizesuchaquantumsetting[61,62],wechoosethewell-known
+quantization framework established in quantum game theory by Eisert, Wilkens, and Lewenstein in 1999 [63].
+Atthebeginningofthegame, nplayersareprovidedwithanentangledn-qubitstate, witheachplayerholding
+one qubit. Players then independently decide which quantum operation from a designated set to perform on
+theirrespectivesystems. Afterplayersmanipulatethesesystems,acollectivemeasurementofthejointquantum
+state is performed, revealing whether each player volunteers or not.
+Forthepayoffstructure,weusethecost-sharingvariantofthevolunteer’sdilemmaàlaWeesieandFranzen
+[57]: if nobody volunteers, all players receive a payoff of 0; if k > 0 players volunteer, each non-volunteer
+receives a payoff of 2 and each volunteer receives a payoff of 2−1/k. In other words, 2 units are awarded if
+at least one player volunteers, and the overall cost of volunteering, which is 1 unit, is shared among all the
+volunteers. Theexpectedpayoffofeachplayeristhengivenbythesumofeachpossiblepayoffvalue,multiplied
+by its corresponding probability, where the probability is determined by Born’s rule [64], which calculates the
+probability of each measurement outcome based on the pre-measurement joint quantum state of the system.
+Weassumethattheplayersinourquantumvolunteer’sdilemmaarerationalandself-interested[65]. Players’
+decisions are the result of maximizing their own selfish payoff functions, conditional on their beliefs about the
+other players’ optimal behaviors. This could lead to decisions that result in Nash equilibria, from which no
+player can increase their own payoff unilaterally [66]. The main results of our work are threefold: first, we
+derive analytical expressions for the players’ expected payoffs, showing that they can be written in terms of
+sumsofproductsoftrigonometricfunctions. Second,usingtheseanalyticalresults,weprovethatourquantum
+game reveals symmetric Nash equilibria with higher expected payoffs compared to the unique symmetric Nash
+equilibrium [57] found in the classical game, where players employ mixed strategies. Third, we establish that
+these symmetric Nash equilibria are Pareto optimal, meaning that no player can improve their payoff without
+reducing the payoff of another player [67]. These features of our quantum game make it both attractive and
+intriguing, offering insights into how quantum strategies can fundamentally alter the dynamics and outcomes
+of social dilemmas.
+The rest of our paper is structured as follows. In Section 1.1, we survey some related work in classical and
+quantumgametheory,emphasizingtheirsignificantprogressinrecentdecadesandtheirrelevancetoourstudy.
+In Section 2, we introduce various game-theoretic concepts that are applicable to both classical and quantum
+game theory. We then review some results in the classical volunteer’s dilemma, both with pure and mixed
+strategies. In Section 3, we define our quantum volunteer’s dilemma game and derive explicit expressions for
+the payoff functions of the players. We then analyze various quantum strategies and prove that some of these
+strategiesarebothNashequilibriaandParetooptimal. Additionally,weprovethatthepayoffsachievedatthese
+quantum Nash equilibria surpass those attainable in the corresponding classical game with mixed strategies,
+showcasing the quantum advantage in this context. Finally, in Section 4, we conclude with a summary of our
+results and an outlook on future research directions.
+1.1 Related work
+Game theory serves as a foundational framework across various disciplines, including economics, political sci-
+ence, and social science [66,68]. It explores strategic interactions amongst multiple players, where the payoffs
+depend not only on each player’s decisions but also on the decisions made by others. Its modern origin can be
+tracedbacktovonNeumann’sseminalworkin1928[69],whichestablishedfundamentalprinciplesforanalyzing
+decision-making in both cooperative and competitive situations. Two important solution concepts developed
+in game theory that are central to this study are the Nash equilibrium [70], where no player can increase their
+payoff by unilaterally changing their actions, and Pareto optimality [67], where it is impossible to make any
+player better off without simultaneously making another player worse off.
+Theadventofideasinquantumcomputationinthe1990ssparkedanewquestion: whatifplayershadaccess
+to quantum strategies? This question was first explored by Meyer [71] and Eisert, Wilkens, and Lewenstein
+(EWL) [63] in 1999, leading to the development of quantum game theory. One notable quantum game is the
+quantum prisoner’s dilemma, which ceases to pose a dilemma if quantum strategies are allowed. Unlike the
+classical prisoner’s dilemma game, where players get trapped in non-Pareto optimal Nash equilibria, quantum
+strategies enable players to achieve Pareto optimal Nash equilibria [63,72–74].
+2
+
+SincethepioneeringworksofMeyerandEWL,quantumgametheoryhasexpandedsignificantly,introducing
+a variety of new quantum games. These include quantum Parrondo’s games [75,76], quantum market games
+[77], quantum cooperative games [78], the quantum battle-of-the-sexes game [79–83], the quantum minority
+game [84,85], and the quantum chicken game (also known as the quantum hawk-dove game) [72,83]. In many
+of these games, quantum strategies offer strategic advantages over classical ones. For example, the quantum
+battle-of-the-sexes game resolves the dilemma of multiple equilibria found in the classical version, leading to a
+uniquesolution[81]. Similarly,inthequantumchickengame,playersusingquantumstrategiesachieveaunique
+Nashequilibriumwithahigherexpectedpayoffcomparedtowhattheywouldachieveusingsymmetricclassical
+mixed strategies [72]. Our work extends this body of research, demonstrating that a quantum advantage also
+emerges in the volunteer’s dilemma, which can be viewed as an n-player generalization of the chicken game.
+The original EWL framework has been extended to various settings, such as iterated [48,86,87], infinitely
+repeated [88,89], multiplayer [84], multi-choice [90], continuous-variable [91], and Bayesian agent-based [92]
+scenarios. In these contexts, the quantum advantage often persists, sometimes giving rise to novel behavior.
+For example, in the multiplayer setting, it has been shown that such games can possess new forms of quantum
+equilibrium, where entanglement shared among multiple players enables novel cooperative behavior [84].
+But what accounts for the advantage observed in quantum games? Various studies have explored the role
+of quantum resources, such as entanglement [93–97] and quantum discord [98,99], in creating this advantage.
+Additionally, the impact of noise in quantum games has been extensively studied [100–108], revealing that
+in the presence of noise, a system may lose its quantum characteristics, reverting to classical behavior and
+thereby diminishing the quantum advantage. More recently, studies have focused on identifying conditions
+that specify appropriate unitary strategies within the EWL framework, further refining our understanding of
+quantum strategic interactions [109–113].
+Withtheadventofsmall-andintermediate-scalequantumdevices[114],variousgroupshaveexperimentally
+demonstrated quantum games using platforms such as linear optics [115,116], nuclear magnetic resonance
+[117,118],iontraps[119],andsuperconductingdevices,includingIBM’squantumcomputersaccessiblethrough
+the cloud [120]. These implementations serve as important benchmarks for early quantum devices and confirm
+thattheyoperateasexpected. Additionally,aninterestingstudybyChenandHoggexploredhowwellhumans
+play quantum games [121]. Surprisingly, they found that even without formal training in quantum mechanics,
+participants nearly achieved the payoffs predicted by quantum game theory.
+Quantumgametheoryhasfounddiverseapplicationsacrossarangeoffields,includinghigh-frequencytrad-
+ing [122], negotiations [123], reducing food waste in supply chains [124], sustainable development [125–127],
+cooperation between pharmaceutical companies [128], and open-access publishing [129]. A significant area of
+application is wireless communication, where quantum strategies can optimize spectrum-sharing in cognitive
+radionetworks[130]. Intrafficflowmanagement,quantumgametheoryhasbeenusedtodesignoptimalrouting
+strategies, helping to reduce congestion and improve efficiency [131]. Furthermore, in the domain of quantum
+networks, quantum game-theoretic approaches have been employed to enhance entanglement distribution pro-
+tocols,maximizingfidelityandminimizinglatencyinquantumcommunication[132]. Ourworkonthequantum
+volunteer’s dilemma contributes to this growing body of work by offering a framework that can help resolve
+social dilemmas or improve network coordination.
+For those interested in delving deeper into quantum game theory, we recommend various introductory
+materials [133,134], lecture notes [72], surveys [135–137], and reviews [138,139] that cover the field’s history,
+development, and applications.
+2 Preliminaries
+2.1 Game-theoretic concepts
+We begin by laying the groundwork for the concepts central to this paper. At the heart of game theory lies
+the notion of a game, which involves multiple players making strategic decisions. Each player is presented with
+a set of possible strategies, and their payoff is determined by their payoff function, evaluated based on the
+combination of strategies chosen by all players. We express this formally as follows.
+Definition 1 (n-player game). For n∈Z+, an n-player game (in strategic form) is a 2n-tuple
+G=(T ,T ,...,T ;$ ,$ ,...,$ ), (1)
+1 2 n 1 2 n
+where each T is a set and each $ :T ×T ×···×T →R is a real-valued function.
+i i 1 2 n
+In this context, T represents the set of strategies available to player i, and $ denotes the payoff function
+i i
+for player i. The value $ (t ,...,t ) indicates the payoff received by player i when for each j ∈ [n], the j-th
+i 1 n
+player chooses strategy t ∈ T . The n-tuple (t ,t ,...,t ) ∈ T ×T ×···×T is called a strategy profile,
+j j 1 2 n 1 2 n
+representing a complete specification of the strategies chosen by all players.
+3
+
+Next, we turn our attention to three key solution concepts in game theory. For the following definitions,
+we consider a strategy profile s = (s ,s ,...,s ) ∈ T ×T ×···×T in the context of an n-player game
+1 2 n 1 2 n
+G=(T ,T ,...,T ;$ ,$ ,...,$ ).
+1 2 n 1 2 n
+Definition 2 (Nash Equilibrium). The strategy profile s=(s ,...,s ) is a Nash equilibrium of G if, for every
+1 n
+player i∈[n] and for every alternative strategy t ∈T \{s }, the following condition holds:
+i i i
+$ (s ,s ,...,s ,s ,s ,...,s )≥$ (s ,s ,...,s ,t ,s ,...,s ). (2)
+i 1 2 i−1 i i+1 n i 1 2 i−1 i i+1 n
+Inotherwords,aNashequilibriumisastrategyprofilewherenoplayercanimprovetheirpayoffbyunilater-
+allydeviatingfromtheircurrentstrategy,giventhatthestrategiesofalltheotherplayersremainunchanged[70].
+In the special case where each player has only two possible strategies, 0 and 1, i.e., T = T = ··· = T =
+1 2 n
+{0,1}, a strategy profile s∈{0,1}n is a Nash equilibrium if and only if for all i∈[n],
+$ (s)≥$ (s⊕e ), (3)
+i i i
+wheree isthebinaryvectorthatiszeroeverywhereexceptonthei-thbit, whereitis1, and⊕denotesbinary
+i
+addition.
+A special type of Nash equilibrium is the symmetric Nash equilibrium, where all players adopt the same
+strategy. Formally:
+Definition 3 (Symmetric Nash equilibrium). The strategy profile s = (s ,...,s ) is a symmetric Nash equi-
+1 n
+librium of G if it is a Nash equilibrium and all players choose the same strategy, i.e., s =s =···=s .
+1 2 n
+Finally, we introduce the concept of Pareto optimality.
+Definition 4 (Pareto optimal). The strategy profile s=(s ,...,s ) is Pareto optimal in G if for every player
+1 n
+i∈[n] and for every strategy profile t∈T ×···×T , the following condition holds:
+1 n
+if $ (t)>$ (s), then there exists j ∈[n]\{i} such that $ (t)<$ (s). (4)
+i i j j
+In other words, a strategy profile is Pareto optimal if improving one player’s payoff necessarily results in a
+decrease in another player’s payoff [67].
+To conclude, the above solution concepts are fundamental in game theory as they provide insights into
+strategic interactions. Ideally, we seek strategy profiles that are both a Nash equilibrium and Pareto optimal,
+as these concepts align with the ideas of efficiency and fairness in strategic interactions.
+2.2 Classical volunteer’s dilemma with pure strategies
+The game we consider in this study is the volunteer’s dilemma, specifically the cost-sharing version introduced
+by Weesie and Franzen [57]. In this version, with n≥2 players, each player decides between volunteering and
+abstaining. The payoffs of the game are structured as follows: if no players volunteer, all players receive a
+payoff of 0. If k > 0 players volunteer, each non-volunteer receives a payoff of b, while each volunteer’s payoff
+is b−c/k. In other words, if at least one player volunteers, the reward of b units is distributed to all players,
+while the total cost of c units incurred by volunteering is divided equally among the volunteers. For simplicity,
+for the rest of this study, we take b=2 and c=1.
+Todenote the players’ strategiesnumerically, we use 1to represent volunteering and0 torepresentabstain-
+ing. With this notation, the above game, when players are restricted to pure classical strategies, is represented
+bythe2n-tupleG(n) =(TVD,TVD,...,TVD;$VD,$VD,...,$VD),whereTVD ={0,1}denotesthesetofstrate-
+VD 1 2 n 1 2 n i
+gies available to player i, and $VD : {0,1}n → R are the payoff functions. These functions, which correspond
+i
+to [57, Eq. (1)] when b=2 and c=1, are given by:
+(cid:40)
+2− 1 , x =1
+$VD(x)= wt(x) i (5)
+i
+2[wt(x)>0], x =0.
+i
+Here,wt(x)={i∈[n]:x =1},theHammingweightofx,denotesthenumberofplayerschoosingtovolunteer.
+i
+The indicator function, represented by the Iverson bracket [wt(x) > 0], equals 1 if wt(x) > 0 (i.e., if at least
+one player volunteers) and 0 otherwise. The payoffs of the volunteer’s dilemma are summarized in table form
+in Table 1.
+ThereareexactlynNashequilibriainthegameG(n),eachcharacterizedbyexactlyoneplayervolunteering
+VD
+and every other player abstaining. In other words, the Nash equilibria, which are the strategy profiles x that
+satisfy Eq. (3), are precisely those x ∈ {0,1}n with Hamming weight wt(x) = 1. To prove that the strategy
+4
+
+Number of other players who volunteer
+Strategy of player i 0 1 2 ··· k−1 ··· n−1
+1 (volunteers) 2− 1 =1 2− 1 = 3 2− 1 = 5 ··· 2− 1 ··· 2− 1
+1 2 2 3 3 k n
+0 (abstains) 0 2 2 ··· 2 ··· 2
+Table 1: Payoff matrix for the n-player volunteer’s dilemma considered in this study. If player i volunteers,
+they receive a payoff of 2− 1 if k−1 other players volunteer. If player i does not volunteer (i.e.,
+k
+abstains),theirpayoffis0ifnootherplayersvolunteer,and2ifatleastoneotherplayervolunteers.
+profile where exactly one player volunteers (i.e., wt(x) = 1) is a Nash equilibrium, consider the case where
+player i is the sole volunteer, i.e. x = 1 and x = 0 for all j ̸= i. If player i chooses to switch to abstaining,
+i j
+then their payoff would drop to 0, as no other player would be volunteering. If another player chooses to
+volunteer alongside player i, then that player’s payoff would decrease from 2 to 2− 1 = 3. Thus, no player
+2 2
+can improve their payoff by unilaterally changing their decision, confirming that these strategy profiles are
+Nash equilibria. Conversely, the strategy profile where all players choose to abstain (i.e., wt(x) = 0) cannot
+be a Nash equilibrium because any player could increase their payoff from 0 to a positive value by choosing
+to volunteer. Similarly, if more than one player volunteers (i.e, wt(x) > 1), then any of the volunteers could
+increase their payoff from 2− 1 to 2 by opting to abstain. Therefore, the n strategy profiles where exactly one
+k
+player volunteers are the only Nash equilibria in the game.
+In the special case when the number of players n=2, the volunteer’s dilemma simplifies to the well-known
+gameofchicken, oftendepictedasfollows: twodriversapproachanarrowbridgefromoppositedirections. The
+first driver to turn aside allows the other to cross. If neither turns, they risk a potentially deadly head-on
+collision, which is the most disastrous outcome for both. Each driver prefers to avoid being labeled as the
+“chicken” by staying on course while hoping the other will swerve [140].
+Inthiscontext,swervingcorrespondstothestrategyofvolunteering,andheadingstraight(i.e.,notswerving)
+corresponds to abstaining. The payoff structure in the volunteer’s dilemma can be mapped as follows: if both
+playersvolunteer(i.e., bothswerve), theyreceiveapayoffof1. Ifoneplayervolunteers(i.e., swerves)whilethe
+other abstains (i.e., heads straight), the volunteer receives a payoff of 1 while the abstainer receives a payoff
+of 2 (benefiting from avoiding a crash while not being called a chicken). If neither player volunteers (i.e., both
+head straight), they receive a payoff of 0 (equivalent to crashing).
+The normal form representation of the chicken game, as a bimatrix, is illustrated in Table 2.
+Player 2
+1 (swerve) 0 (straight)
+Player 1
+3 2
+1 (swerve) 2
+3 1
+2
+1 0
+0 (straight)
+2 0
+Table 2: Payoffmatrixforthegameofchicken,derivedbysettingthenumberofplayersn=2inthepayoff
+matrixofthevolunteer’sdilemmashowninTable1. Swervingisakintovolunteering,andheading
+straight is akin to abstaining.
+Now, the above characterization of Nash equilibria specializes to the well-known result that, in the game
+of chicken, the Nash equilibria occur when one player swerves while the other goes straight. Notably, in both
+chicken and the more general n-player volunteer’s dilemma, the Nash equilibria are not symmetric, meaning
+thatplayersdonotalladoptthesamestrategy. Giventhesymmetricnatureofthepayoffs,however,onemight
+expect or prefer symmetric Nash equilibria. To achieve such equilibria, one approach is to modify the game
+G(n) to allow players to employ mixed strategies.
+VD
+2.3 Classical volunteer’s dilemma with mixed strategies
+Mixedstrategiesinthecontextofthevolunteer’sdilemmainvolveplayersdecidingtovolunteerprobabilistically
+ratherthandeterministically. Specifically,eachplayer’sstrategysetinthisgameistheunitinterval[0,1],where
+astrategyofπ ∈[0,1]indicatesthattheplayerwillchoosetovolunteerwithprobabilityπ. Thepayofffunction
+for each player is the expected value of the payoff function from the deterministic game, with payoffs weighted
+5
+
+Figure 1: Plots of the degree-n polynomials g (α) versus α over the interval α∈[0,1], for n=2 to n=10.
+n
+The unique root of g (α) within the interval (0,1) is the strategy adopted by each player at the
+n
+unique symmetric Nash equilibrium in the classical volunteer’s dilemma with mixed strategies.
+bytheprobabilityofchoosingtovolunteer. Thisformulationinterpolatesbetweenthepurestrategiesdiscussed
+inSection2.2,withπ =1correspondingtovolunteering(strategyx=1)andπ =0correspondingtoabstaining
+(strategy x=0).
+Formally, the classical volunteer’s dilemma with mixed strategies may be represented by the 2n-tuple
+G(n) = (TMVD,TMVD,...,TMVD;$MVD,$MVD,...,$MVD), where TMVD = [0,1] denotes the set of strate-
+MVD 1 2 n 1 2 n i
+gies available to player i, and $MVD :[0,1]n →R are the payoff functions, defined as
+i
+(cid:88)
+$MVD(π ,π ,...,π )= $VD(x)q (x), (6)
+i 1 2 n i π1,...,πn
+x∈{0,1}n
+where $VD are the payoff functions of the (deterministic) volunteer’s dilemma given by Eq. (5) and
+i
+n
+(cid:89)
+q (x ,...,x )= πxi(1−π )1−xi (7)
+π1,...,πn 1 n i i
+i=1
+denotes the joint probability that the strategy profile (x ,...,x ) is chosen. The strategies of each player are
+1 n
+assumed to be chosen independently and so the joint probability mass function q factorizes; indeed,
+π1,...,πn
+Eq. (7) can be written as q (x ,...,x ) = q (x )···q (x ), where q (1) = π is the probability that
+π1,...,πn 1 n π1 1 πn n πi i
+playerivolunteers,andq (0)=1−π istheprobabilitythattheyabstain. Wewillreferto$MVD(π ,π ,...,π )
+πi i i 1 2 n
+as the expected payoff of player i under mixed strategies.
+Unlike the volunteer’s dilemma with pure strategies G(n), which has no symmetric Nash equilibria, the
+VD
+mixed-strategy game G(n) admits a unique symmetric Nash equilibrium. Interestingly, at this equilibrium,
+MVD
+players volunteer with a probability that is a root of some univariate degree-n polynomial whose coefficients
+depend on n. More precisely, this result may be stated as follows:
+Theorem 5 (Weesie and Franzen [57, Theorem 1i]). The n-player volunteer’s dilemma with mixed strategies
+G(n) has exactly one symmetric Nash equilibrium (α ,α ,...,α ), where α is the unique root in the open
+MVD n n n n
+interval (0,1) of the degree-n polynomial g given by
+n
+g (α)=(1−α)n−1(2nα+1−α)−1. (8)
+n
+To illustrate the polynomials g (α), we plot them over the interval [0,1] for n = 2 to n = 10 in Figure 1.
+n
+As can be seen from this plot, the unique root α of g in (0,1) decreases as n increases. For large n, the root
+n n
+asymptotically behaves as [57, Theorem 1ii]:
+ω∗
+α = +O(n−2), (9)
+n n
+(cid:16) (cid:17)
+where ω∗ =−
+2
+1 −W
+−1
+−
+2
+√1
+e
+≈1.25643 is the unique positive solution for ω of the equation
+eω =1+2ω, (10)
+6
+
+Figure 2: Plots of the roots α versus n for n ranging from 2 to 50. The root α , which is the unique
+n n
+rootofthepolynomialg withintheopeninterval(0,1),representsthestrategyadoptedbyeach
+n
+playerattheuniquesymmetricNashequilibrium intheclassicalvolunteer’sdilemma withmixed
+strategies. The approximation ω∗/n estimates α , with an error term of O(n−2).
+n
+with W (z) denoting the k-th branch of the Lambert W-function evaluated at z, implemented in the Wolfram
+k
+Language as ProductLog[k,z] [141,142]. To illustrate the decreasing trend of α and its behavior for large n,
+n
+we present a plot of α versus n and compare it with the approximation α ≈ω∗/n in Figure 2.
+n n
+Our next theorem provides an expression for the expected payoff of each player when players choose the
+unique symmetric Nash equilibrium strategy profile.
+Theorem 6. For the n-player classical volunteer’s dilemma with mixed strategies G(n) , when the unique
+MVD
+symmetric Nash equilibrium strategy profile (α ,...,α ) is chosen, the expected payoff of each player i defined
+n n
+by Eq. (6) evaluates to
+(cid:18) (cid:19)
+1
+$MVD(α ,α ,...,α )= 2− ·(1−(1−α )n). (11)
+i n n n n n
+Proof. Consider the scenario in which every player chooses to volunteer with probability α , and let A be the
+n
+event where every player abstains. The probability of the event A is given by
+P(A)=(1−α )n.
+n
+In this case, the conditional expected payoff for each player is
+E[$VD(x)|A]=0, (12)
+i
+as there are no volunteers.
+Next, considerthecomplementeventAc, whereatleastoneplayervolunteers. Bythecomplementrule, the
+probability of this event is
+P(Ac)=1−P(A)=1−(1−α )n.
+n
+Ifthenumberofvolunteersisk >0,thenthetotalpayoffdistributedamongallplayersis(2−1)k+2(n−k)=
+k
+2n−1. Consequently, given that at least one player volunteers, the conditional expected payoff for each player
+is
+2n−1 1
+E[$VD(x)|Ac]= =2− . (13)
+i n n
+Therefore, by the law of total expectation, the expected payoff for each player can be expressed as
+$MVD(α ,α ,...,α )=E[$VD(x)]
+i n n n i
+=E[$VD(x)|A]·P(A)+E[$VD(x)|Ac]·P(Ac)
+i i
+(cid:18) (cid:19)
+1
+=0·(1−α )n+ 2− ·(1−(1−α )n)
+n n n
+(cid:18) (cid:19)
+1
+= 2− ·(1−(1−α )n),
+n n
+which completes the proof of the theorem.
+7
+
+Figure 3: Payoffs at symmetric Nash equilibria for both the quantum volunteer’s dilemma and the classical
+volunteer’sdilemmawithmixedstrategies,asafunctionofthenumberofplayersn. Theclassical
+payoffasymptoticallyapproaches2(1−e−w∗ )≈1.43042,whilethequantumpayoff,whichis2−1,
+n
+asymptotically approaches 2, demonstrating a larger value.
+A few remarks about the expected payoff given in Eq. (11) are in order. First, note that the expression
+1−(1−α )n < 1 since α ∈ (0,1). Consequently, the expected payoff of each player is bounded above as
+n n
+follows:
+1
+$MVD(α ,α ,...,α )<2− . (14)
+i n n n n
+Second, for large n, α scales as ω∗, with this approximation being valid when neglecting terms of order
+n n
+n−2 and smaller (Eq. (9)). Hence, in the limit as n approaches infinity, the expected payoff converges to
+(cid:18) (cid:19)
+1
+lim $MVD(α ,α ,...,α )= lim 2− ·(1−(1−α )n)
+n→∞ i n n n n→∞ n n
+(cid:16) (cid:17)
+=2 1− lim (1−α )n
+n
+n→∞
+(cid:18) (cid:18) w∗(cid:19)n(cid:19)
+=2 1− lim 1−
+n→∞ n
+(cid:16) (cid:17)
+=2
+1−e−w∗
+≈1.43042. (15)
+The relational statements in Eqs. (14) and (15) can be contrasted with those for the quantum volunteer’s
+dilemma, which we will introduce in Section 3. In contrast to the strict upper bound in Eq. (14), where
+the classical payoff is strictly less than 2− 1, the quantum volunteer’s dilemma can achieve symmetric Nash
+n
+equilibriawherethepayoffofeachplayerequals2−1. Moreover,whereasthelimitofthepayoffintheclassical
+n
+game as n approaches infinity is ≈1.43042, the quantum game’s limit is significantly larger, approaching
+lim (2− 1)=2. This increase in payoffs underscores the advantage of the quantum game over its classical
+n→∞ n
+counterpart. We compare the payoffs at these symmetric Nash equilibria for both the classical and quantum
+games in Figure 3.
+3 Quantum volunteer’s dilemma
+We now introduce the quantum volunteer’s dilemma, which extends the classical volunteer’s dilemma by al-
+lowing players to use quantum strategies rather than classical ones, following the Eisert–Wilkens–Lewenstein
+quantization framework [63].
+3.1 Game setup
+The quantum volunteer’s dilemma game begins with n players receiving an n-qubit entangled state, with each
+player controlling one qubit. We fix the shared state as J|0⟩⊗n, where J is the n-qubit entangling unitary
+8
+
+|0⟩ U(θ ,ϕ ) (18)
+1 1
+|0⟩ U(θ ,ϕ )
+2 2
+|0⟩ U(θ ,ϕ )
+J 3 3 J†
+. . .
+. . .
+. . .
+|0⟩ U(θ ,ϕ )
+n n
+Figure 4: Circuit diagram for the quantum volunteer’s dilemma. First, the entangling gate J is applied to
+the n-qubit computational basis state |0⟩⊗n. Each player i ∈ [n] then applies the single-qubit
+unitary U(θ ,ϕ ) to qubit i. Next, the entangling gate J† is applied, followed by a computational
+i i
+basis measurement.
+operator
+J =e−i 4 πY⊗n = √1 (I−iY⊗n), (16)
+2
+where Y =
+(cid:0)0−i(cid:1)
+is the Pauli-Y matrix.
+i 0
+Each player independently selects a quantum operation from a designated set to apply to their respective
+qubit. Weshallfixthissettobethetwo-parameterfamilyofunitaries{U(θ,ϕ):θ ∈[0,4π),ϕ∈[0,2π)},where
+ 
+eiϕcos(θ) sin(θ)
+U(θ,ϕ)= 2 2 . (17)
+−sin(θ) e−iϕcos(θ)
+2 2
+Notethatchoosingastrategyfromtheabovetwo-parameterstrategiesamountstoselectingtworealparameters
+θ and ϕ. Accordingly, we represent each player’s strategy set by Θ := [0,4π)×[0,2π), and say that player i’s
+strategyis(θ ,ϕ )∈ΘiftheyselecttheoperationU(θ ,ϕ )toperformontheirqubit. LetΘn denotethen-fold
+i i i i
+Cartesian product of Θ and denote its elements by (θ,ϕ):=((θ ,ϕ ),...,(θ ,ϕ )).
+1 1 n n
+After the players apply their quantum operation U(θ ,ϕ ), a collective measurement is performed. We
+i i
+fix this measurement to be the n-qubit entangling measurement conducted in the basis {J|k⟩ : k ∈ {0,1}n}.
+Equivalently, this can be achieved by applying the entangling gate J† followed by a computational basis mea-
+surement. We associate the i-th bit of the measurement outcome k ∈{0,1}n with whether player i volunteers,
+with k = 0 indicating that they volunteer, and k = 1 indicating that they abstain. The quantum circuit
+i i
+depicted in Figure 4 provides a visual summary of these steps.
+Notethatthequantumvolunteer’sdilemmareducestotheclassicalvolunteer’sdilemmawithmixedstrate-
+gies, as discussed in Section 2.3, if the players can choose only those (θ,ϕ) in Eq. (17) where ϕ = 0. In this
+case, volunteering is represented by U(0,0)=I, and abstaining represented by U(π,0)= (cid:0) 0 1(cid:1) .
+−10
+The probability distribution resulting from the measurement may be expressed as follows. If players choose
+the parameters θ = (θ ,...,θ ) ∈ [0,4π)n and ϕ = (ϕ ,...,ϕ ) ∈ [0,2π)n, the pre-measurement state before
+1 n 1 n
+the computational basis measurement is performed is given by
+n
+(cid:79)
+|ψ (θ,ϕ)⟩=J†· U(θ ,ϕ )·J|0⟩⊗n. (19)
+f i i
+i=1
+Forastringx∈{0,1}n, letx¯∈{0,1}n denotethestringwhereeachbitinxisflipped, i.e., x¯ =1−x . Let
+i i
+a (x)andp (x)representtheamplitudeandprobability,respectively,ofobservingthebinarystringx¯when
+θ,ϕ θ,ϕ
+the state |ϕ ⟩ is measured in the computational basis. According to Born’s rule, the amplitude and probability
+f
+of measuring x¯ are
+n
+(cid:79)
+a (x)=⟨x¯|ψ (θ,ϕ)⟩=⟨x¯|J†· U(θ ,ϕ )·J|0⟩⊗n, and (20)
+θ,ϕ f i i
+i=1
+p (x)=|a (x)|2 =|⟨x¯|ψ (θ,ϕ)⟩|2 = (cid:12) (cid:12) (cid:12)⟨x¯|J†· (cid:79) n U(θ ,ϕ )·J|0⟩⊗n (cid:12) (cid:12) (cid:12) 2 . (21)
+θ,ϕ θ,ϕ f (cid:12) i i (cid:12)
+(cid:12) (cid:12)
+i=1
+Thus, p (x) is the probability that players in supp(x) volunteer and players in [n]\supp(x) abstain, where
+θ,ϕ
+supp(x)={i∈[n]:x =1} denotes the support of the string x∈{0,1}n.
+i
+9
+
+The expected payoff of player i is then given by
+(cid:88)
+$ (θ,ϕ)= $VD(x)p (x), (22)
+i i θ,ϕ
+x∈{0,1}n
+where $VD represents the payoff functions in the deterministic volunteer’s dilemma as defined in Eq. (5) and
+i
+p (x) is defined in Eq. (21).
+θ,ϕ
+Formally, the n-player quantum volunteer’s dilemma can be represented by the 2n-tuple
+G(n) =(T ,T ,...,T ;$ ,$ ,...,$ ), (23)
+QVD 1 2 n 1 2 n
+where T =T =T =···=T =Θ are the strategy sets and $ :Θn →R, defined by Eq. (22), are the payoff
+1 2 3 n i
+functions.
+3.2 Analytical expressions for the payoff functions
+The goal of this section is to simplify the expression for the payoff function in Eq. (22). To achieve this, we
+first introduce some auxiliary functions that will help us represent the payoff functions more compactly. Let
+(cid:32) (cid:33) (cid:18) (cid:19) (cid:18) (cid:19)
+c (x)=cos (cid:88) ϕ · (cid:89) sin θ i · (cid:89) cos θ i , (24)
+θ,ϕ i 2 2
+i:xi=1 i:xi=0 i:xi=1
+(cid:32) (cid:33) (cid:18) (cid:19) (cid:18) (cid:19)
+s (x)=sin (cid:88) ϕ · (cid:89) cos θ i · (cid:89) sin θ i . (25)
+θ,ϕ i 2 2
+i:xi=0 i:xi=0 i:xi=1
+The product of these functions is given by
+t (x)=c (x)s (x)
+θ,ϕ θ,ϕ θ,ϕ
+(cid:32) (cid:33) (cid:32) (cid:33) n
+1 (cid:88) (cid:88) (cid:89)
+= cos ϕ sin ϕ sin(θ ), (26)
+2n i i i
+i:xi=1 i:xi=0 i=1
+where the last line follows from the double-angle identity sin(θ )=2sin(θ /2)cos(θ /2).
+i i i
+We now present an analytical expression for the payoff functions.
+Lemma 7. The payoff for player i∈[n], as given by Eq. (22), is given by:
+n (cid:18) (cid:19)
+(cid:88) (cid:88) 1 (cid:88)
+$ (θ,ϕ)=2 p (x)+ 2− p (x), (27)
+i θ,ϕ k θ,ϕ
+x∈{0,1}n k=1 x∈{0,1}n
+x̸=0n xi=1
+xi=0 wt(x)=k
+where the probability, as defined in Eq. (21), is
+p θ,ϕ (x)=c2 θ,ϕ (x)+s2 θ,ϕ (x)−2(−1)n 2 +wt(x)t θ,ϕ (x)[n∈2Z]. (28)
+Proof. We begin by deriving Eq. (27). Starting from Eq. (22), we obtain
+(cid:88)
+$ (θ,ϕ)= $VD(x)p (x)
+i i θ,ϕ
+x∈{0,1}n
+ (cid:88) (cid:88) 
++
+=$V i D(0n)p θ,ϕ (0n)+  x∈{0,1}n x∈{0,1}n   $V i D(x)p θ,ϕ (x)
+(cid:124) (cid:123)(cid:122) (cid:125) x̸=0n xi=1
+=0 xi=0
+(cid:18) (cid:19)
+(cid:88) (cid:88) 1
+=2 p (x)+ 2− p (x)
+θ,ϕ wt(x) θ,ϕ
+x∈{0,1}n x∈{0,1}n
+x̸=0n xi=1
+xi=0
+n (cid:18) (cid:19)
+(cid:88) (cid:88) (cid:88) 1
+=2 p (x)+ 2− p (x)
+θ,ϕ wt(x) θ,ϕ
+x∈{0,1}n k=1x∈{0,1}n
+x̸=0n wt(x)=k
+xi=0 xi=1
+10
+
+n (cid:18) (cid:19)
+(cid:88) (cid:88) 1 (cid:88)
+=2 p (x)+ 2− p (x). (29)
+θ,ϕ k θ,ϕ
+x∈{0,1}n k=1 x∈{0,1}n
+x̸=0n xi=1
+xi=0 wt(x)=k
+To prove Eq. (28), consider how the quantum state evolves through each step in the circuit shown in Figure 4.
+The entangled state that the players receive is
+J|0⟩⊗n = √ 1 (cid:0) |0⟩⊗n−in+1|1⟩⊗n(cid:1) . (30)
+2
+After the players apply their local operations, the state becomes
+n (cid:34) n n (cid:35)
+(cid:79) 1 (cid:79) (cid:79)
+U(θ ,ϕ )·J|0⟩⊗n = √ U(θ ,ϕ )|0⟩−in+1 U(θ ,ϕ )|1⟩ . (31)
+i i i i i i
+2
+i=1 i=1 i=1
+On the other hand, the elements of the measurement basis can be written as
+1
+J|x¯⟩= √ (I−iY⊗n)|x¯⟩
+2
+ 
+n
+1 (cid:79)
+=
+2
+|x¯⟩−i Y|x¯
+j
+⟩
+j=1
+ 
+n
+1 (cid:79)
+=
+2
+|x¯⟩−i (−1)x¯ji|x¯
+j
+⟩
+j=1
+1 (cid:16) (cid:17)
+= √ |x¯⟩−in+1·(−1)wt(x¯)|x⟩ . (32)
+2
+Substituting Eqs. (31) and (32) into the amplitude expression given by Eq. (20), we obtain
+(cid:32) n n (cid:33)
+1 (cid:16) (cid:17) 1 (cid:79) (cid:79)
+a (x)= √ ⟨x¯|−(−i)n+1(−1)wt(x¯)⟨x| √ U(θ ,ϕ )|0⟩−in+1 U(θ ,ϕ )|1⟩
+θ,ϕ i i i i
+2 2
+i=1 i=1
+(cid:32) n n
+1 (cid:89) (cid:89)
+= ⟨x¯ |U(θ ,ϕ )|0⟩−in+1 ⟨x¯ |U(θ ,ϕ )|1⟩
+2 i i i i i i
+i=1 i=1
+n n (cid:33)
+(cid:89) (cid:89)
+−(−i)n+1(−1)wt(x¯) ⟨x |U(θ ,ϕ )|0⟩+(−1)wt(x¯) ⟨x |U(θ ,ϕ )|1⟩
+i i i i i i
+i=1 i=1
+(cid:34)
+1 (cid:89) (cid:89) (cid:89) (cid:89)
+= ⟨1|U(θ ,ϕ )|0⟩ ⟨0|U(θ ,ϕ )|0⟩−in+1 ⟨1|U(θ ,ϕ )|1⟩ ⟨0|U(θ ,ϕ )|1⟩
+2 i i i i i i i i
+i:xi=0 i:xi=1 i:xi=0 i:xi=1
+(cid:89) (cid:89)
+−(−i)n+1(−1)wt(x¯) ⟨0|U(θ ,ϕ )|0⟩ ⟨1|U(θ ,ϕ )|0⟩
+i i i i
+i:xi=0 i:xi=1
+(cid:35)
+(cid:89) (cid:89)
++(−1)wt(x¯) ⟨0|U(θ ,ϕ )|1⟩ ⟨1|U(θ ,ϕ )|1⟩ . (33)
+i i i i
+i:xi=0 i:xi=1
+Substitutingtheexpressionsforthematrixelements⟨0|U(θ
+i
+,ϕ
+i
+)|0⟩=eiϕicos(θ
+2
+i),⟨1|U(θ
+i
+,ϕ
+i
+)|0⟩=−sin(θ
+2
+i),
+⟨0|U(θ
+i
+,ϕ
+i
+)|1⟩=sin(θ
+2
+i), and ⟨1|U(θ
+i
+,ϕ
+i
+)|1⟩=e−iϕicos(θ
+2
+i) into Eq. (33), we get
+(cid:34) (cid:18) (cid:19) (cid:18) (cid:19) (cid:18) (cid:19) (cid:18) (cid:19)
+a (x)= 1 (cid:89) −sin θ i · (cid:89) eiϕicos θ i −in+1 (cid:89) e−iϕicos θ i · (cid:89) sin θ i
+θ,ϕ 2 2 2 2 2
+i:xi=0 i:xi=1 i:xi=0 i:xi=1
+(cid:18) (cid:19) (cid:18) (cid:19)
+−(−i)n+1(−1)wt(x¯) (cid:89) eiϕicos θ i · (cid:89) −sin θ i
+2 2
+i:xi=0 i:xi=1
+(cid:18) (cid:19)(cid:35)
++(−1)wt(x¯) (cid:89) sin θ i · (cid:89) e−iϕicos θ i
+2 2
+i:xi=0 i:xi=1
+(cid:34)
+= 1 (−1)wt(x¯)ei(cid:80) i:xi=1 ϕi (cid:89) sin θ i (cid:89) cos θ i −in+1e−i(cid:80) i:xi=0 ϕi (cid:89) cos θ i (cid:89) sin θ i
+2 2 2 2 2
+i:xi=0 i:xi=1 i:xi=0 i:xi=1
+11
+
+−(−i)n+1(−1)nei(cid:80) i:xi=0 ϕi (cid:89) cos θ i (cid:89) sin θ i
+2 2
+i:xi=0 i:xi=1
+(cid:35)
++(−1)wt(x¯)e−i(cid:80) i:xi=1 ϕi (cid:89) sin θ i (cid:89) cos θ i
+2 2
+i:xi=0 i:xi=1
+=(−1)wt(x¯)· 1(cid:16) ei(cid:80) i:xi=1 ϕi +e−i(cid:80) i:xi=1 ϕi (cid:17) (cid:89) sin θ i (cid:89) cos θ i
+2 2 2
+i:xi=0 i:xi=1
++in+1· 1(cid:16) ei(cid:80) i:xi=0 ϕi −e−i(cid:80) i:xi=0 ϕi (cid:17) (cid:89) cos θ i (cid:89) sin θ i
+2 2 2
+i:xi=0 i:xi=1
+(cid:32) (cid:33) (cid:32) (cid:33)
+=(−1)wt(x¯)cos (cid:88) ϕ (cid:89) sin θ i (cid:89) cos θ i −insin (cid:88) ϕ (cid:89) cos θ i (cid:89) sin θ i. (34)
+i 2 2 i 2 2
+i:xi=1 i:xi=0 i:xi=1 i:xi=0 i:xi=0 i:xi=1
+Squaring these amplitudes gives the probabilities:
+(cid:12) (cid:32) (cid:33) (cid:32) (cid:33) (cid:12)2
+p (x)= (cid:12) (cid:12)(−1)wt(x¯)cos (cid:88) ϕ (cid:89) sin θ i (cid:89) cos θ i −insin (cid:88) ϕ (cid:89) cos θ i (cid:89) sin θ i (cid:12) (cid:12) .
+θ,ϕ (cid:12) i 2 2 i 2 2(cid:12)
+(cid:12) (cid:12)
+i:xi=1 i:xi=0 i:xi=1 i:xi=0 i:xi=0 i:xi=1
+(35)
+The amplitude given by Eq. (34) can be either real or have a non-zero imaginary component, depending on
+whether n is even or odd. Specifically, when n is even, in is real, whereas for odd n, in is imaginary. In light of
+this, when evaluating the probability p (x), we will consider these two cases separately.
+θ,ϕ
+Case 1: n is even. When n is even, in =(i2)n/2 =(−1)n/2, and hence the amplitude given by Eq. (34) is real.
+Therefore, the probability expression simplifies to the square of this real amplitude.
+(cid:34) (cid:32) (cid:33) (cid:32) (cid:33) (cid:35)2
+p θ,ϕ (x)= (−1)wt(x¯)cos (cid:88) ϕ i (cid:89) sin θ 2 i (cid:89) cos θ 2 i −(−1)n 2 sin (cid:88) ϕ i (cid:89) cos θ 2 i (cid:89) sin θ 2 i
+i:xi=1 i:xi=0 i:xi=1 i:xi=0 i:xi=0 i:xi=1
+(cid:104) (cid:105)2
+= (−1)wt(x¯)c (x)−(−1)n/2s (x)
+θ,ϕ θ,ϕ
+=c2 (x)+s2 (x)−2(−1)wt(x¯)(−1)n/2c (x)s (x)
+θ,ϕ θ,ϕ θ,ϕ θ,ϕ
+=c2 (x)+s2 (x)−2(−1)wt(x)+n/2t (x), (36)
+θ,ϕ θ,ϕ θ,ϕ
+where the last line follows from the fact that (−1)n/2+wt(x¯) =(−1)n/2+wt(x).
+Case 2: n is odd. When n is odd, in = i(−1)n− 2 1 is purely imaginary. Therefore, the probability expression
+simplifies as follows:
+(cid:34) (cid:32) (cid:33) (cid:35)2 (cid:34) (cid:32) (cid:33) (cid:35)2
+p (x)= cos (cid:88) ϕ (cid:89) sin θ i (cid:89) cos θ i + sin (cid:88) ϕ (cid:89) cos θ i (cid:89) sin θ i
+θ,ϕ i 2 2 i 2 2
+i:xi=1 i:xi=0 i:xi=1 i:xi=0 i:xi=0 i:xi=1
+=c2 (x)+s2 (x). (37)
+θ,ϕ θ,ϕ
+By making use of the Iverson bracket, Eqs. (36) and (37) can be compactly expressed as
+p θ,ϕ (x)=c2 θ,ϕ (x)+s2 θ,ϕ (x)−2(−1)n 2 +wt(x)t θ,ϕ (x)[n∈2Z], (38)
+which completes the proof of the lemma.
+3.3 Symmetric Nash equilibria for n ≤ 9
+In this section, we will exhibit the existence of a symmetric Nash equilibrium for the quantum volunteer’s
+dilemmawithn≤9thatyieldsahigherpayoffcomparedtotheclassicalvolunteer’sdilemmawithmixedstrate-
+gies. As we will show in our next theorem, this symmetric Nash equilibrium occurs when all players choose the
+strategy Q := (cid:0) 0,π(cid:1) ∈ Θ, i.e., when the strategy profile is Qn = (Q,Q,...,Q) = (cid:0) (0,π),(0,π),...,(0,π) (cid:1) ∈
+n n n n
+Θn. This corresponds to each player applying the unitary operator
+U
+(cid:0) 0,π(cid:1)
+=
+(cid:18) eiπ/n 0 (cid:19)
+(39)
+n 0 e−iπ/n
+to their respective quantum systems.
+12
+
+Our next theorem also establishes that with the strategy profile Qn, each player will volunteer with
+probability 1, meaning that the probability distribution in Eq. (38) becomes the degenerate distribution
+p (x) = [x = 1n], resulting in each player’s payoff being $ (Qn) = 2− 1. Here 1n = 11···1 ∈ {0,1}n
+Qn a n
+denotes the all-ones string.
+ThekeydifferenceinNashequilibriumbehaviorbetweenn≤9andn≥10arisesfromthefollowinglemma
+concerning the function f(x) = sin2(πx)−x. The behavior of f(x) is illustrated in Figure 5, which helps to
+visualize the regions where f(x) is positive or negative.
+Lemma 8. Let x>0. Then,
+(cid:40)
+<0, for 0<x≤ 1
+sin2(πx)−x 10 (40)
+>0, for 1 ≤x≤ 1.
+9 2
+Proof. Let f(x) = sin2(πx)−x. We first evaluate the function at a few points of interest: f(0) = 0, f( 1 ) ≈
+10
+−0.0045<0, f(1)≈0.0043>0, and f(0.5)= 1 >0.
+Since f is con 9 tinuous, it is sufficient to show 2 that f has exactly one minimum point in the interval (cid:0) 0, 1 (cid:1)
+10
+and exactly one maximum point in the interval
+(cid:0)1,1(cid:1)
+. To establish this, we compute the first two derivatives
+9 2
+of f, solve for the stationary points, and determine whether these points are maxima or minima within the
+interval (0,1):
+2
+f′(x)=πsin(2πx)−1,
+f′′(x)=2π2cos(2πx). (41)
+To find the stationary points, set
+1
+f′(x)=0 =⇒ sin(2πx)=
+π
+(cid:18) (cid:18) (cid:19) (cid:19) (cid:18) (cid:18) (cid:19) (cid:19)
+1 1 1 1 1
+=⇒ x∈ arcsin +Z ∪ − arcsin +Z . (42)
+2π π 2 2π π
+The intersection of the above set with the interval
+(cid:0) 0,1(cid:1)
+, which we are interested in, contains only two
+2
+stationary points, namely
+(cid:18) (cid:19) (cid:18) (cid:19)
+1 1 1 1 1
+x := arcsin ≈0.0515, x := − arcsin ≈0.448. (43)
+0 2π π 1 2 2π π
+We check that f′′(x ) ≈ 18.71 > 0 and f′′(x ) ≈ −18.71 < 0. Thus, x is the unique local minimum in
+0 1 0
+the interval (cid:0) 0, 1 (cid:1) and x is the unique local maximum in the interval (cid:0)1,1(cid:1) . This concludes the proof of the
+10 1 9 2
+lemma.
+We now use Lemma 8 to prove our main theorem about the strategy profile Qn.
+Theorem 9. For the n-player quantum volunteer’s dilemma G(n) , if the players adopt the strategy profile Qn,
+QVD
+then every player volunteers with probability 1, i.e., the probability distribution is given by p (x) = [x = 1n],
+Qn
+and the corresponding payoff of each player a∈[n] is
+1
+$ (Qn)=2− . (44)
+a n
+Moreover,
+a) if 2≤n≤9, then Qn is a Nash equilibrium of G(n) , and
+QVD
+b) if n≥10, then Qn is not a Nash equilibrium of G(n) .
+QVD
+Proof. To calculate the probability that each player volunteers, we use the expression in Eq. (28) derived in
+Lemma7. Atthestrategyprofile(θ,ϕ)=Qn,thefunctionsdefinedinEq.(24),Eq.(25),andEq.(26)simplify
+as follows:
+(cid:32) (cid:33) (cid:18) (cid:19) (cid:18) (cid:19)
+(cid:88) π (cid:89) 0 (cid:89) 0
+c (x)=cos sin cos
+Qn
+n 2 2
+i:xi=1 i:xi=0 i:xi=1
+(cid:16) π(cid:17) (cid:89)
+=cos wt(x) 0
+n
+i:xi=0
+13
+
+Figure 5: Graphofthefunctionf(x)=sin2(πx)−xforxintheinterval (cid:2) 0,1(cid:3) . Thegraphf(x)isnegative
+for x∈ (cid:0) 0, 1 (cid:3) and positive for x∈ (cid:2)1,1(cid:3) . 2
+10 9 2
+(cid:16) π(cid:17)
+=cos wt(x) [∀i:x =1]
+n i
+(cid:16) π(cid:17)
+=cos wt(x) [wt(x)=n]
+n
+=cos(π)[wt(x)=n]
+=−[x=1n], (45)
+(cid:32) (cid:33) (cid:18) (cid:19) (cid:18) (cid:19)
+(cid:88) π (cid:89) 0 (cid:89) 0
+s (x)=sin cos sin
+Qn
+n 2 2
+i:xi=0 i:xi=0 i:xi=1
+(cid:16) π(cid:17) (cid:89)
+=sin wt(x¯) 0
+n
+i:xi=1
+(cid:16) π(cid:17)
+=sin wt(x¯) [∀i:x =0]
+n i
+(cid:16) π(cid:17)
+=sin wt(x¯) [wt(x¯)=n]
+n
+=sin(π)[wt(x¯)=n]
+=0, (46)
+t (1n)=c (1n)s (1n)=0. (47)
+Qn Qn Qn
+Hence, p (x) = [x = 1n], i.e., p (1n) = 1. In other words, every player volunteers with probability 1.
+Qn Qn
+Substituting this expression into Eq. (27) yields the following payoff for each player a∈[n]:
+n (cid:18) (cid:19)
+(cid:88) 1
+$ (Qn)= 2− |{x∈{0,1}n :x =1 and x=1n and wt(x)=k}|. (48)
+a k a
+k=1
+But the set {x∈{0,1}n :x =1 and x=1n and wt(x)=k} is empty unless k = n, in which case it is equal
+a
+to the singleton set {1n}. Hence,
+n (cid:18) (cid:19)
+(cid:88) 1 1
+$ (Qn)= 2− δ =2− , (49)
+a k k,n n
+k=1
+where δ is the Kronecker delta.
+k,n
+Next,todeterminewhetherQnisaNashequilibrium,weexaminethescenariowhereaspecificplayera∈[n]
+potentiallydeviatesfromQ, whileallotherplayersi̸=amaintainthestrategyQ. Webeginbycalculatingthe
+payoff for player a under these conditions.
+(cid:12)
+c (x)(cid:12)
+θ,ϕ (cid:12)
+(θi,ϕi)=Q,∀i̸=a
+14
+
+(cid:32) (cid:33) (cid:12)
+=cos (cid:88) ϕ · (cid:89) sin θ i · (cid:89) cos θ i (cid:12) (cid:12)
+i 2 2(cid:12)
+i:xi=1 i:xi=0 i:xi=1 (cid:12) θi=0,ϕi= π
+n
+,∀i̸=a
+  (cid:12)
+=cosx
+a
+ϕ
+a
++ (cid:88) ϕ isin1−xa (cid:18) θ
+2
+a (cid:19) cosxa (cid:18) θ
+2
+a (cid:19) (cid:89) sin θ
+2
+i (cid:89) cos θ
+2
+i (cid:12) (cid:12)
+(cid:12)
+i:xi=1,i̸=a i:
+i
+x
+̸=
+i=
+a
+0 i:
+i
+x
+̸=
+i=
+a
+1 (cid:12) θi=0,ϕi= π
+n
+,∀i̸=a
+ 
+(cid:18) (cid:19) (cid:18) (cid:19)
+=cosx
+a
+ϕ
+a
++ (cid:88) π
+n
+sin1−xa θ
+2
+a cosxa θ
+2
+a [∀i̸=a,x
+i
+=1]
+i:xi=1,i̸=a
+(cid:18) (cid:19) (cid:18) (cid:19) (cid:18) (cid:19)
+n−1 θ θ
+=cos x ϕ + π sin1−xa a cosxa a [∀i̸=a,x =1]
+a a n 2 2 i
+(cid:16)π (cid:17) (cid:18) θ (cid:19) (cid:18) θ (cid:19)
+=−cos −x ϕ sin1−xa a cosxa a [∀i̸=a,x =1]
+n a a 2 2 i
+
+ −cos
+(cid:0)π
+n
+(cid:1)
+sin
+(cid:0)θ
+2 a
+(cid:1)
+, for x a =0,x i =1,∀i̸=a
+= −cos
+(cid:0)π
+n −ϕ a
+(cid:1)
+cos
+(cid:0)θ
+2 a
+(cid:1)
+, for x a =1,x i =1,∀i̸=a (50)
+0,
+otherwise.
+Similarly,
+(cid:12)
+s (x)(cid:12)
+θ,ϕ (cid:12)
+(θi,ϕi)=Q,∀i̸=a
+(cid:32) (cid:33) (cid:12)
+=sin (cid:88) ϕ (cid:89) cos θ i (cid:89) sin θ i (cid:12) (cid:12)
+i 2 2(cid:12)
+i:xi=0 i:xi=0 i:xi=1 (cid:12) θi=0,ϕi= π
+n
+,∀i̸=a
+  (cid:12)
+=sinx¯
+a
+ϕ
+a
++ (cid:88) ϕ icos1−xa (cid:18) θ
+2
+a (cid:19) sinxa (cid:18) θ
+2
+a (cid:19) (cid:89) cos θ
+2
+i (cid:89) sin θ
+2
+i (cid:12) (cid:12)
+(cid:12)
+i:xi=0,i̸=a i:
+i
+x
+̸=
+i=
+a
+0 i:
+i
+x
+̸=
+i=
+a
+1 (cid:12) θi=0,ϕi= π
+n
+,∀i̸=a
+ 
+(cid:18) (cid:19) (cid:18) (cid:19)
+=sinx¯
+a
+ϕ
+a
++ (cid:88) π
+n
+cos1−xa θ
+2
+a sinxa θ
+2
+a [∀i̸=a,x
+i
+=0]
+i:xi=0,i̸=a
+(cid:18) (cid:19) (cid:18) (cid:19) (cid:18) (cid:19)
+n−1 θ θ
+=sin x¯ ϕ + π cos1−xa a sinxa a [∀i̸=a,x =0]
+a a n 2 2 i
+(cid:16)π (cid:17) (cid:18) θ (cid:19) (cid:18) θ (cid:19)
+=sin −x¯ ϕ cos1−xa a sinxa a [∀i̸=a,x =1]
+n a a 2 2 i
+
+ sin
+(cid:0)π
+n −ϕ a
+(cid:1)
+cos
+(cid:0)θ
+2 a
+(cid:1)
+, for x a =0,x i =0,∀i̸=a
+= sin
+(cid:0)π
+n
+(cid:1)
+sin
+(cid:0)θ
+2 a
+(cid:1)
+, for x a =1,x i =0,∀i̸=a (51)
+0,
+otherwise.
+(cid:12) (cid:12)
+Since c (x)(cid:12) and s (x)(cid:12) have disjoint supports, it follows that their product
+θ,ϕ (cid:12) θ,ϕ (cid:12)
+(cid:12)
+(θi,ϕi)=Q,∀i̸=a (θi,ϕi)=Q,∀i̸=a
+t (x)(cid:12) vanishes. Hence, the probability of observing the outcome x is
+θ,ϕ (cid:12)
+(θi,ϕi)=Q,∀i̸=a
+(cid:12) (cid:16)π (cid:17) (cid:18) θ (cid:19) (cid:18) θ (cid:19)
+p (x)(cid:12) =cos2 −x ϕ sin2(1−xa) a cos2xa a [∀i̸=a:x =1]
+θ,ϕ (cid:12) (θi,ϕi)=Q,∀i̸=a n a a 2 2 i
+(cid:16)π (cid:17) (cid:18) θ (cid:19) (cid:18) θ (cid:19)
++sin2 −x¯ ϕ cos2(1−xa) a sin2xa a [∀i̸=a:x =0]
+n a a 2 2 i
+  c
+c
+o
+o
+s
+s
+2
+2
+(cid:0)
+(cid:0)
+π
+π
+n
+n
+(cid:1)
+−
+si
+ϕ
+n
+a
+2
+(cid:1)
+(cid:0)
+c
+θ 2
+o
+a
+s
+(cid:1)
+2
+,
+(cid:0)θ 2 a (cid:1) ,
+f
+f
+o
+o
+r
+r
+x
+x
+a
+a
+=
+=
+0
+1
+,
+,
+x
+x
+i
+i
+=
+=
+1
+1
+,
+,
+∀
+∀
+i
+i
+̸=
+̸=
+a
+a
+(
+(
+i
+i
+.
+.
+e
+e
+.
+.
+,
+x
+x
+=
+=
+1
+1
+n
+1
+)
+...10
+↑
+a
+11...1)
+= sin2(cid:0)π n −ϕ a (cid:1) cos2(cid:0)θ 2 a (cid:1) , for x a =0,x i =0,∀i̸=a (i.e., x=0n) (52)
+
+s
+0
+i
+,
+n2(cid:0)π
+n
+(cid:1) sin2(cid:0)θ
+2 a
+(cid:1)
+, f
+o
+o
+t
+r
+he
+x
+r
+a
+w
+=
+ise
+1
+,
+,x i =0,∀i̸=a (i.e., x=00...01
+↑
+a
+0...00)
+where the upward arrows indicate that the 0 or 1, respectively, is located at the a-th position in the binary
+string.
+15
+
+Therefore, the payoff of player a is
+(cid:12)
+(cid:12) (cid:88) (cid:88) n (cid:18) 1 (cid:19) (cid:88) (cid:12)
+$ (θ,ϕ)(cid:12) =2 p (x)+ 2− p (x)(cid:12)
+a (cid:12) (θi,ϕi)=Q,∀i̸=a x∈{0,1}n θ,ϕ k=1 k x∈{0,1}n θ,ϕ (cid:12) (cid:12) (θi,ϕi)=Q,∀i̸=a
+x̸=0n xa=1
+xa=0 wt(x)=k
+(cid:12)
+(cid:18) 1 (cid:19) (cid:18) 1 (cid:19) (cid:12)
+=2p (1...101...1)+ 2− p (0,...010...0)+ 2− p (1n)(cid:12)
+θ,ϕ ↑ 1 θ,ϕ ↑ n θ,ϕ (cid:12) (cid:12)
+a a (θi,ϕi)=Q,∀i̸=a
+(cid:16)π(cid:17) (cid:18) θ (cid:19) (cid:16)π(cid:17) (cid:18) θ (cid:19) (cid:18) 1 (cid:19) (cid:16)π (cid:17) (cid:18) θ (cid:19)
+=2cos2 sin2 a +sin2 sin2 a + 2− cos2 −ϕ cos2 a
+n 2 n 2 n n a 2
+(cid:16) π(cid:17) θ (cid:18) 1 (cid:19) (cid:16)π (cid:17) θ
+= 1+cos2 sin2 a + 2− cos2 −ϕ cos2 a.
+n 2 n n a 2
+a) Considerthecasewhere2≤n≤9. Foranya∈[n], wewillshowthatthepayoffofthea-thplayer, when
+all other players adopt the strategy Q, is bounded above by 2− 1 =$ (Qn). Indeed,
+n a
+(cid:12) (cid:16) π(cid:17) θ (cid:18) 1 (cid:19) (cid:16)π (cid:17) θ
+$ (θ,ϕ)(cid:12) = 1+cos2 sin2 a + 2− cos2 −ϕ cos2 a
+a (cid:12) (θi,ϕi)=Q,∀i̸=a n 2 n n a 2
+(cid:124) (cid:123)(cid:122) (cid:125)
+≤1
+(cid:16) π(cid:17) θ (cid:18) 1 (cid:19)(cid:18) θ (cid:19)
+≤ 1+cos2 sin2 a + 2− 1−sin2 a
+n 2 n 2
+(cid:18) (cid:19) (cid:18) (cid:19)
+1 π 1 θ
+=2− − 1−cos2 − sin2 a
+n n n 2
+(cid:18) (cid:19) (cid:18) (cid:19)
+1 π 1 θ
+=2− − sin2 − sin2 a
+n n n 2
+(cid:124) (cid:123)(cid:122) (cid:125)(cid:124) (cid:123)(cid:122) (cid:125)
+>0 ≥0
+1
+≤2− =$ (Qn),
+n a
+where the inequality on the last line follows from Lemma 8 with x = 1. Therefore, the strategy Q
+n
+providestheoptimalpayoffforplayerawhenallotherplayersalsochoosethestrategyQ. Sincethesame
+reasoning applies to every player a, the strategy profile Qn is a Nash equilibrium.
+b) Consider the case where n ≥ 10. For any player a ∈ [n], we will demonstrate that if all other players
+adopt the strategy Q, there exists an alternative strategy for player a that results in a higher payoff than
+if they were to choose Q, where the payoff from choosing Q would be 2− 1 = $ (Qn). This shows that
+n a
+Qn cannot be a Nash equilibrium.
+Indeed, an example of an alternative strategy is the choice (θ ,ϕ ) = (π,π). With this strategy, the
+a a n
+payoff for player a evaluates to
+(cid:12)
+(cid:12) (cid:16) π(cid:17) π (cid:18) 1 (cid:19) (cid:16)π π(cid:17) π
+$ (θ,ϕ)(cid:12) = 1+cos2 sin2 + 2− cos2 − cos2
+a (cid:12) n 2 n n n 2
+(cid:12)(θi,ϕi)=Q,∀i̸=a,
+θa=π,ϕa=π/n
+(cid:16)π(cid:17)
+=1+cos2
+n
+(cid:16)π(cid:17)
+=2−sin2
+n
+1
+>2− =$ (Qn), (53)
+n a
+where the inequality on the last line follows from Lemma 8. Hence Qn is not a Nash equilibrium for
+n≥10.
+By combining the results above, we conclude that Qn is a Nash equilibrium if and only if n≤9.
+3.4 Symmetric Nash equilibria for even n
+In this section, we shift our focus from the previously discussed symmetric Nash equilibria Qn to a new family
+ofsymmetricNashequilibriaforcaseswithanevennumberofplayers. Inthisnewstrategyprofile, eachplayer
+16
+
+adoptsthestrategyA=(0,π)∈Θ,resultinginacollectivestrategyprofileAn =(A,...,A)∈Θn. Thischoice
+2
+corresponds to each player applying the unitary operator
+(cid:18) (cid:19)
+U
+(cid:0) 0,π(cid:1)
+=
+i 0
+=iZ (54)
+2 0 −i
+to their respective quantum systems, where Z = (cid:0)1 0 (cid:1) is the Pauli-Z matrix. Like Qn, we will show that this
+0−1
+new strategy profile yields a payoff of 2− 1, surpassing the payoff of the symmetric Nash equilibrium in the
+n
+classical volunteer’s dilemma.
+Theorem 10. In the n-player quantum volunteer’s dilemma G(n) , if the players adopt the strategy profile
+QVD
+An, then every player volunteers with probability 1 when n is even, while every player abstains with probability
+1 when n is odd, i.e.,
+p (x)=[n even][x=1n]+[n odd][x=0n], (55)
+An
+and the corresponding payoff of each player a∈[n] is
+(cid:18) (cid:19)
+1
+$ (An)= 2− [n even]. (56)
+a n
+Moreover,
+a) if n is even, then An is a Nash equilibrium of G(n) , and
+QVD
+b) if n is odd, then An is not a Nash equilibrium of G(n) .
+QVD
+Proof. To calculate the probability that each player volunteers, we use the expression in Eq. (28) derived in
+Lemma7. Atthestrategyprofile(θ,ϕ)=An, thefunctionsdefinedinEq.(24), Eq.(25), andEq.(26)simplify
+as follows:
+(cid:32) (cid:33) (cid:18) (cid:19) (cid:18) (cid:19)
+(cid:88) π (cid:89) 0 (cid:89) 0
+c (x)=cos sin cos
+An
+2 2 2
+i:xi=1 i:xi=0 i:xi=1
+(cid:16) π(cid:17) (cid:89)
+=cos wt(x) 0
+2
+i:xi=0
+(cid:16) π(cid:17)
+=cos wt(x) [∀i:x =1]
+2 i
+(cid:16) π(cid:17)
+=cos wt(x) [wt(x)=n]
+2
+(cid:16)nπ(cid:17)
+=cos [wt(x)=n]
+2
+
+0, for odd n
+
+=[wt(x)=n]× 1, for n≡0 (mod 4)
+−1,
+for n≡2 (mod 4)
+=(−1)n/2[n even][x=1n]. (57)
+Similarly,
+(cid:32) (cid:33) (cid:18) (cid:19) (cid:18) (cid:19)
+(cid:88) π (cid:89) 0 (cid:89) 0
+s (x)=sin cos sin
+An
+2 2 2
+i:xi=0 i:xi=0 i:xi=1
+(cid:16) π(cid:17) (cid:89)
+=sin wt(x¯) 0
+2
+i:xi=1
+(cid:16) π(cid:17)
+=sin wt(x¯) [∀i:x =0]
+2 i
+(cid:16) π(cid:17)
+=sin wt(x¯) [wt(x¯)=n]
+2
+(cid:16)nπ(cid:17)
+=sin [wt(x)=0]
+2
+
+0, for even n
+
+=[wt(x)=0]× 1, for n≡1 (mod 4)
+−1,
+for n≡3 (mod 4)
+17
+
+=(−1) n− 2 1 [n odd][x=0n]. (58)
+Sincec (x)vanisheswhenevernisoddands (x)vanisheswheneverniseven,theirproductt (x)must
+An An An
+always vanish regardless of n, i.e., t (x) = 0. Consequently, the probability expression in Eq. (38) simplifies
+An
+to
+p (x)=c2 (x)+s2 (x)
+An An An
+(cid:16) (cid:17)2 (cid:16) (cid:17)2
+= (−1)n/2[n even][x=1n] + (−1) n− 2 1 [n odd][x=0n]
+=[n even][x=1n]+[n odd][x=0n], (59)
+whichgivestheexpressioninEq.(55). Inotherwords, whenthenumberofplayersniseven, theneveryplayer
+would volunteer with probability 1, and when the number of players is odd, then every player would abstain
+with probability 1.
+Substituting Eq. (59) into Eq. (27) gives
+ 
+(cid:88)
+$
+a
+(An)=2 [n even][x=1n]+[n odd][x=0n]
+x∈{0,1}n (cid:124) (cid:123)(cid:122) (cid:125) (cid:124) (cid:123)(cid:122) (cid:125)
+=0 =0
+x̸=0n
+xi=0
+ 
+n (cid:18) (cid:19)
+(cid:88) 1 (cid:88)
++ 2− [n even][x=1n]+[n odd][x=0n]
+k
+k=1 x∈{0,1}n (cid:124) (cid:123)(cid:122) (cid:125)
+=0
+xi=1
+wt(x)=k
+n (cid:18) (cid:19)
+(cid:88) 1
+=[n even] 2− δ
+k kn
+k=1
+(cid:18) (cid:19)
+1
+= 2− [n even], (60)
+n
+which completes the derivation of Eq. (56).
+Next, to determine whether An is a Nash equilibrium, we consider the scenario where a specific player
+a ∈ [n] potentially deviates from the strategy A, while all other players i ̸= a continue to follow the strategy
+A. Under these conditions, the payoff for player a may be calculated as follows:
+(cid:12)
+c (x)(cid:12)
+θ,ϕ (cid:12)
+(θi,ϕi)=A,∀i̸=a
+(cid:32) (cid:33) (cid:12)
+=cos (cid:88) ϕ (cid:89) sin θ i (cid:89) cos θ i (cid:12) (cid:12)
+i 2 2(cid:12)
+(cid:12)
+i:xi=1 i:xi=0 i:xi=1 θi=0,ϕi=π
+2
+,∀i̸=a
+  (cid:12)
+=cosx
+a
+ϕ
+a
++ (cid:88) ϕ isin1−xa (cid:18) θ
+2
+a (cid:19) cosxa (cid:18) θ
+2
+a (cid:19) (cid:89) sin θ
+2
+i (cid:89) cos θ
+2
+i (cid:12) (cid:12)
+(cid:12)
+i:xi=1,i̸=a i:
+i
+x
+̸=
+i=
+a
+0 i:
+i
+x
+̸=
+i=
+a
+1 (cid:12) θi=0,ϕi= π
+2
+,∀i̸=a
+ 
+(cid:18) (cid:19) (cid:18) (cid:19)
+=cosx
+a
+ϕ
+a
++ (cid:88) π
+2
+sin1−xa θ
+2
+a cosxa θ
+2
+a [∀i̸=a,x
+i
+=1]
+i:xi=1,i̸=a
+(cid:16) π(cid:17) (cid:18) θ (cid:19) (cid:18) θ (cid:19)
+=cos x ϕ +(n−1) sin1−xa a cosxa a [∀i̸=a,x =1]
+a a 2 2 2 i
+(cid:16) (cid:17) (cid:18) θ (cid:19) (cid:18) θ (cid:19)
+= (−1)n 2 sin(x a ϕ a )[n even]+(−1) n− 2 1 cos(x a ϕ a )[n odd] sin1−xa 2 a cosxa 2 a [∀i̸=a,x i =1], (61)
+where the last line follows from the identity:
+
+sin(xϕ), for n≡0 (mod 4)
+(cid:16) π(cid:17)
+cos(xϕ),
+for n≡1 (mod 4)
+cos xϕ+(n−1) =
+2  −
+−
+s
+c
+i
+o
+n
+s
+(
+(
+x
+x
+ϕ
+ϕ
+)
+)
+,
+,
+f
+f
+o
+o
+r
+r
+n
+n
+≡
+≡
+2
+3
+(
+(
+m
+m
+o
+o
+d
+d
+4
+4
+)
+)
+=(−1)n 2 sin(xϕ)[n even]+(−1) n− 2 1 cos(xϕ)[n odd]. (62)
+18
+
+Similarly,
+(cid:12)
+s (x)(cid:12)
+θ,ϕ (cid:12)
+(θi,ϕi)=A,∀i̸=a
+(cid:32) (cid:33) (cid:12)
+=sin (cid:88) ϕ (cid:89) cos θ i (cid:89) sin θ i (cid:12) (cid:12)
+i 2 2(cid:12)
+(cid:12)
+i:xi=0 i:xi=0 i:xi=1 θi=0,ϕi=π
+2
+,∀i̸=a
+  (cid:12)
+=sinx¯
+a
+ϕ
+a
++ (cid:88) ϕ icos1−xa (cid:18) θ
+2
+a (cid:19) sinxa (cid:18) θ
+2
+a (cid:19) (cid:89) cos θ
+2
+i (cid:89) sin θ
+2
+i (cid:12) (cid:12)
+(cid:12)
+i:xi=0,i̸=a i:
+i
+x
+̸=
+i=
+a
+0 i:
+i
+x
+̸=
+i=
+a
+1 (cid:12) θi=0,ϕi= π
+2
+,∀i̸=a
+ 
+(cid:18) (cid:19) (cid:18) (cid:19)
+=sinx¯
+a
+ϕ
+a
++ (cid:88) π
+2
+cos1−xa θ
+2
+a sinxa θ
+2
+a [∀i̸=a,x
+i
+=0]
+i:xi=0,i̸=a
+(cid:16) π(cid:17) (cid:18) θ (cid:19) (cid:18) θ (cid:19)
+=sin x¯ ϕ +(n−1) cos1−xa a sinxa a [∀i̸=a,x =0]
+a a 2 2 2 i
+(cid:16) (cid:17) (cid:18) θ (cid:19) (cid:18) θ (cid:19)
+= −(−1)n 2 cos(x¯ a ϕ a )[n even]+(−1) n− 2 1 sin(x¯ a ϕ a )[n odd] cos1−xa 2 a sinxa 2 a [∀i̸=a,x i =0], (63)
+where the last line follows from the identity:
+
+−cos(xϕ), for n≡0 (mod 4)
+(cid:16) π(cid:17)
+sin(xϕ),
+for n≡1 (mod 4)
+sin xϕ+(n−1) =
+2  c
+−
+os
+s
+(
+in
+x
+(
+ϕ
+x
+)
+ϕ
+,
+),
+f
+f
+o
+o
+r
+r
+n
+n
+≡
+≡
+2
+3
+(
+(
+m
+m
+o
+o
+d
+d
+4
+4
+)
+)
+=−(−1)n 2 cos(xϕ)[n even]+(−1) n− 2 1 sin(xϕ)[n odd]. (64)
+Since Eq. (61) and Eq. (63) are nonzero for disjoint sets of x, their product t (x)| = 0.
+θ,ϕ (θi,ϕi)=(0,π/2),∀i̸=a
+Hence, the corresponding probability evaluates to
+(cid:12) (cid:12) (cid:12)
+p (x)(cid:12) =c (x)2(cid:12) +s (x)2(cid:12)
+θ,ϕ (cid:12) θ,ϕ (cid:12) θ,ϕ (cid:12)
+(θi,ϕi)=A,∀i̸=a (θi,ϕi)=A,∀i̸=a (θi,ϕi)=A,∀i̸=a
+(cid:18) (cid:19) (cid:18) (cid:19)
+= (cid:0) sin2(x ϕ )[n even]+cos2(x ϕ )[n odd] (cid:1) sin2(1−xa) θ a cos2xa θ a [∀i̸=a,x =1]
+a a a a 2 2 i
+(cid:18) (cid:19) (cid:18) (cid:19)
++ (cid:0) cos2(x¯ ϕ )[n even]+sin2(x¯ ϕ )[n odd] (cid:1) cos2(1−xa) θ a sin2xa θ a [∀i̸=a,x =0]. (65)
+a a a a 2 2 i
+We will now consider the cases where n is even and n is odd separately.
+a) When n is even, the probability distribution simplifies to
+(cid:12) (cid:18) θ (cid:19) (cid:18) θ (cid:19)
+p (x)(cid:12) =sin2(x ϕ )sin2(1−xa) a cos2xa a [∀i̸=a,x =1]
+θ,ϕ (cid:12) (θi,ϕi)=A,∀i̸=a a a 2 2 i
+(cid:18) (cid:19) (cid:18) (cid:19)
+θ θ
++cos2(x¯ ϕ )cos2(1−xa) a sin2xa a [∀i̸=a,x =0] (66)
+a a 2 2 i
+=
+ c si
+o
+n
+s
+2
+2
+(
+(
+ϕ
+ϕ
+a
+a
+)
+)
+c
+c
+o
+o
+s
+s
+2
+2
+(cid:0)
+(cid:0)
+θ
+θ
+2
+2
+a
+a
+(cid:1)
+(cid:1)
+f
+f
+o
+o
+r
+r
+x
+x
+=
+=
+1
+0
+n
+n (67)
+ s
+0
+in2(cid:0)θ
+2 a
+(cid:1)
+f
+o
+o
+t
+r
+he
+x
+r
+a
+w
+=
+ise
+1
+.
+,x i =0,∀i̸=a
+Hence, the payoff for player a evaluates to
+(cid:12) (cid:18) θ (cid:19) (cid:18) 1 (cid:19) (cid:18) θ (cid:19)
+$ (θ,ϕ)(cid:12) =sin2 a + 2− sin2(ϕ )cos2 a
+a (cid:12) (θi,ϕi)=A,∀i̸=a 2 n a 2
+(cid:18) (cid:19) (cid:18) (cid:19) (cid:18) (cid:19)
+θ 1 θ
+≤sin2 a + 2− cos2 a
+2 n 2
+1
+≤2− =$ (An). (68)
+n a
+Therefore, the strategy A provides the optimal payoff for player a when all other players also choose
+the strategy A. Since the same reasoning applies to every player a, the strategy profile An is a Nash
+equilibrium.
+19
+
+b) When n is odd, the probability distribution simplifies to
+(cid:12) (cid:18) θ (cid:19) (cid:18) θ (cid:19)
+p (x)(cid:12) =cos2(x ϕ )sin2(1−xa) a cos2xa a [∀i̸=a,x =1]
+θ,ϕ (cid:12) (θi,ϕi)=A,∀i̸=a a a 2 2 i
+(cid:18) (cid:19) (cid:18) (cid:19)
+θ θ
++sin2(x¯ ϕ )cos2(1−xa) a sin2xa a [∀i̸=a,x =0]
+a a 2 2 i
+=
+  s
+c
+i
+o
+n
+s
+2
+2
+(
+(ϕ
+θ 2 a
+a
+)
+)
+,
+cos2(cid:0)θ 2 a (cid:1) , f
+f
+o
+o
+r
+r
+x
+x a
+=
+=
+1
+0
+n
+,x i =1,∀i̸=a
+(69)
+ s
+0
+i
+,
+n2(ϕ a )cos2(cid:0)θ 2 a (cid:1) ,
+o
+fo
+t
+r
+he
+x
+rw
+=
+is
+0
+e
+n
+.
+Hence, the payoff for player a evaluates to
+(cid:12) (cid:18) θ (cid:19) (cid:18) 1 (cid:19) (cid:18) θ (cid:19)
+$ (θ,ϕ)(cid:12) =2sin2 a + 2− cos2(ϕ )cos2 a . (70)
+a (cid:12) (θi,ϕi)=A,∀i̸=a 2 n a 2
+Now, suppose that player a chooses the parameters θ =π and ϕ =0. Then Eq. (70) evaluates to
+a a
+(cid:12)
+$ (θ,ϕ)(cid:12) =2, (71)
+a (cid:12)
+(θi,ϕi)=A,∀i̸=a;θa=π,ϕa=0
+which exceeds the payoff of 0=$ (An) that they would receive by following strategy A. Hence, when n
+a
+is odd, An is not a Nash equilibrium.
+By combining the results above, we conclude that An is a Nash equilibrium if and only if n is even.
+3.5 Pareto optimality
+In Sections 3.3 and 3.4, we presented two distinct families of symmetric Nash equilibria. In this section, we
+will demonstrate that these Nash equilibria are also Pareto optimal, as defined earlier in Definition 4. More
+broadly, we will prove that any strategy profile where every player receives a payoff of 2− 1 must be Pareto
+n
+optimal. This includes the strategy profile Qn, as well as the strategy profile An when n is even, both of which
+satisfy this payoff condition.
+Theorem 11. Let s ∈ Θn be any strategy profile for which $ (s) = 2− 1 for all a ∈ [n]. Then s is Pareto
+a n
+optimal in the n-player quantum volunteer’s dilemma G(n) .
+QVD
+Proof. To prove that s is Pareto optimal, it suffices to show that for any player i∈[n] and any strategy profile
+t∈Θn, if $ (t)>$ (s), then there exists another player j ∈[n]\{i} such that $ (t)<$ (s).
+i i j j
+To establish this, fix a player i∈[n] and a strategy profile t∈Θn such that $ (t)>$ (s), i.e.,
+i i
+1
+2− <$ (t). (72)
+n i
+Suppose, for the sake of contradiction, that there does not exist any other player j ∈[n]\{i} such that $ (t)<
+j
+$ (s). By de Morgan’s laws for quantifiers, this assumption is equivalent to $ (t) ≥ $ (s) for all j ∈ [n]\{i},
+j j j
+i.e.,
+1
+2− ≤$ (t), ∀j ∈[n]\{i}. (73)
+n j
+Taking the sum of Eq. (72) and the sum over all j ̸=i of Eq. (73), we obtain
+(cid:18) (cid:19) n
+1 (cid:88)
+n 2− < $ (t), (74)
+n j
+j=1
+which implies that
+ 
+n n (cid:18) (cid:19)
+(cid:88) (cid:88) (cid:88) 1 (cid:88)
+2n−1<   2 p t (x)+ 2− k p t (x) 
+j=1 x∈{0,1}n k=1 x∈{0,1}n 
+ x̸=0n xj=1 
+xj=0 wt(x)=k
+20
+
+n n (cid:18) (cid:19) n
+(cid:88) (cid:88) (cid:88) 1 (cid:88) (cid:88)
+=2 p (x)+ 2− p (x). (75)
+t k t
+j=1x∈{0,1}n k=1 j=1x∈{0,1}n
+x̸=0n xj=1
+xj=0 wt(x)=k
+(cid:124) (cid:123)(cid:122) (cid:125) (cid:124) (cid:123)(cid:122) (cid:125)
+1 2
+Now, the first sum in Eq. (75) simplifies to
+n n n
+(cid:88) (cid:88) (cid:88) (cid:88) (cid:88) (cid:88) (cid:88)
+1 = p (x)= x¯ p (x)= x¯ p (x)= wt(x¯)p (x)
+t j t j t t
+j=1x∈{0,1}n j=1x∈{0,1}n x∈{0,1}nj=1 x∈{0,1}n
+x̸=0n x̸=0n x̸=0n x̸=0n
+xj=0
+n n n
+(cid:88) (cid:88) (cid:88) (cid:88) (cid:88) (cid:88)
+= wt(x¯)p (x)= (n−k)p (x)= (n−k) p (x), (76)
+t t t
+k=1x∈{0,1}n k=1x∈{0,1}n k=1 x={0,1}n
+wt(x)=k wt(x)=k wt(x)=k
+and the second sum in Eq. (75) simplifies to
+n (cid:18) (cid:19) n n (cid:18) (cid:19) n n (cid:18) (cid:19) n
+(cid:88) 1 (cid:88) (cid:88) (cid:88) 1 (cid:88) (cid:88) (cid:88) 1 (cid:88) (cid:88)
+2 = 2− p (x)= 2− x p (x)= 2− x p (x)
+k t k j t k j t
+k=1 j=1x∈{0,1}n k=1 j=1x∈{0,1}n k=1 x∈{0,1}nj=1
+xj=1 wt(x)=k wt(x)=k
+wt(x)=k
+n (cid:18) (cid:19) n
+(cid:88) 1 (cid:88) (cid:88) (cid:88)
+= 2− wt(x)p (x)= (2k−1) p (x). (77)
+k t t
+k=1 x∈{0,1}n k=1 x∈{0,1}n
+wt(x)=k wt(x)=k
+Substituting Eqs. (76) and (77) back into Eq. (75) yields:
+n n
+(cid:88) (cid:88) (cid:88) (cid:88)
+2n−1<2 (n−k) p (x)+ (2k−1) p (x)
+t t
+k=1 x={0,1}n k=1 x∈{0,1}n
+wt(x)=k wt(x)=k
+n
+(cid:88) (cid:88) (cid:88)
+=(2n−1) p (x)=(2n−1) p (x)
+t t
+k=1x∈{0,1}n x∈{0,1}n
+wt(x)=k x̸=0
+(cid:88)
+≤(2n−1) p (x)
+t
+x∈{0,1}n
+=2n−1, (78)
+which is a contradiction, since 2n−1 cannot be less than itself.
+Therefore, there must exist another player j ∈ [n]\{i} for which $ (t) < $ (s). This concludes the proof
+j j
+that s is Pareto optimal.
+A straightforward corollary of Theorem 11 is that those strategy profiles Qn and An where each player’s
+payoff is 2−1/n are Pareto optimal. We state this formally as follows:
+Corollary 12. In the n-player quantum volunteer’s dilemma G(n) , the following strategy profiles are Pareto
+QVD
+optimal:
+a) Qn, for all n≥2,
+b) An, for all even n.
+Proof. From Eqs. (44) and (56), any strategy profile s ∈ {Qn : n ≥ 2}∪{An : n even} satisfies $ (s) = 2− 1
+a n
+for each player a∈[n]. Thus, by Theorem 11, these strategy profiles are Pareto optimal.
+4 Conclusion
+In this study, we explored a quantum generalization of the classical volunteer’s dilemma by incorporating
+quantum strategies, utilizing the quantization framework introduced by Eisert, Wilkens, and Lewenstein [63].
+21
+
+Our analysis of the quantum volunteer’s dilemma with multiple players reveals key insights into the strategic
+advantages of decision-making in a quantum context.
+We derived explicit analytical expressions for the expected payoffs of players, demonstrating that the quan-
+tum version of the game offers crucial advantages over its classical counterpart. Specifically, the quantum
+volunteer’s dilemma features symmetric Nash equilibria—Qn for n≤9 and An for even n—which yield higher
+expected payoffs compared to the unique symmetric Nash equilibrium of the classical game, where players
+employ mixed strategies. Notably, these Nash equilibria we identified are also Pareto optimal.
+Ourfindingscontributetoadeepertheoreticalunderstandingofhowquantummechanicscanimpactstrate-
+gic interactions in game theory. By highlighting the benefits of quantum strategies, this work paves the way
+for exploring their practical implementations and potential applications in diverse real-world contexts.
+Acknowledgements
+D.E.K. acknowledges funding support from the National Research Foundation, Singapore and the Agency for Science,
+Technology and Research (A*STAR) under its Quantum Engineering Programme (NRF2021-QEP2-02-P03), A*STAR
+C230917003, and A*STAR under the Central Research Fund (CRF) Award for Use-Inspired Basic Research (UIBR).
+Competing interests
+The authors declare no competing interests.
+Data Availability
+Data sharing is not applicable to this article as no datasets were generated or analyzed during the current study.
+References
+[1] Andreas Diekmann. Volunteer’s dilemma. Journal of Conflict Resolution, 29(4):605–610, 1985.
+doi:10.1177/0022002785029004003. [p. 1]
+[2] AndreasDiekmann.Volunteer’sDilemma.ASocialTrapwithoutaDominantStrategyandsomeEmpiricalResults,
+pages 187–197. Physica-Verlag HD, Heidelberg, 1986. doi:10.1007/978-3-642-95874-8_13. [p. 1]
+[3] Marco Archetti. The volunteer’s dilemma and the optimal size of a social group. Journal of Theoretical Biology,
+261(3):475–480, 2009. doi:10.1016/j.jtbi.2009.08.018. [p. 1]
+[4] MarcoArchetti. Cooperationasavolunteer’sdilemmaandthestrategyofconflictinpublicgoodsgames. Journal
+of evolutionary biology, 22(11):2192–2200, 2009. doi:10.1111/j.1420-9101.2009.01835.x. [p. 1]
+[5] Young-joo Lee and Jeffrey L. Brudney. Rational volunteering: a benefit-cost approach. International Journal of
+Sociology and Social Policy, 29(9/10):512–530, Jan 2009. doi:10.1108/01443330910986298. [p. 1]
+[6] Joachim I. Krueger. The vexing volunteer’s dilemma. Current Directions in Psychological Science, 28(1):53–58,
+2019. doi:10.1177/0963721418807709. [p. 1]
+[7] Florian Heine, Arjen van Witteloostuijn, and Tse-Min Wang. Self-sacrifice for the Common Good under
+Risk and Competition: An Experimental Examination of the Impact of Public Service Motivation in a Vol-
+unteer’s Dilemma Game. Journal of Public Administration Research and Theory, 32(1):217–232, 07 2021.
+doi:10.1093/jopart/muab017. [p. 1]
+[8] Bibb Latané and John M Darley. The unresponsive bystander: Why doesn’t he help? New York: Appleton
+Century-Crofts, 1970. [p. 1]
+[9] Karthik Panchanathan, Willem E Frankenhuis, and Joan B Silk. The bystander effect in an N-
+person dictator game. Organizational Behavior and Human Decision Processes, 120(2):285–297, 2013.
+doi:10.1016/j.obhdp.2012.06.008. [p. 1]
+[10] Andreas Tutić. Procedurally rational volunteers. The Journal of Mathematical Sociology, 38(3):219–232, 2014.
+doi:10.1080/0022250X.2013.815186. [p. 1]
+[11] Kyle A Thomas, Julian De Freitas, Peter DeScioli, and Steven Pinker. Recursive mentalizing and com-
+mon knowledge in the bystander effect. Journal of Experimental Psychology: General, 145(5):621, 2016.
+doi:10.1037/xge0000153. [p. 1]
+[12] JaeyoungKwak,MichaelH.Lees,WentongCai,andMarcusE.H.Ong. Modelinghelpingbehaviorinemergency
+evacuationsusingvolunteer’sdilemmagame. InValeriaV.Krzhizhanovskaya,GáborZávodszky,MichaelH.Lees,
+Jack J. Dongarra, Peter M. A. Sloot, Sérgio Brissos, and João Teixeira, editors, Computational Science – ICCS
+2020, pages 513–523, Cham, 2020. Springer International Publishing. doi:10.1007/978-3-030-50371-0_38. [p. 1]
+[13] Pol Campos-Mercade. The volunteer’s dilemma explains the bystander effect. Journal of Economic Behavior &
+Organization, 186:646–661, 2021. doi:10.1016/j.jebo.2020.11.012. [p. 1]
+[14] Hironori Otsubo and Amnon Rapoport. Dynamic volunteer’s dilemmas over a finite horizon: An experimental
+study. Journal of Conflict Resolution, 52(6):961–984, 2008. doi:10.1177/0022002708321401. [p. 1]
+22
+
+[15] Christian Hilbe, Bin Wu, Arne Traulsen, and Martin A. Nowak. Cooperation and control in multi-
+player social dilemmas. Proceedings of the National Academy of Sciences, 111(46):16425–16430, 2014.
+doi:10.1073/pnas.1407887111. [p. 1]
+[16] Jacob Dineen, A. S. M. Ahsan-Ul Haque, and Matthew Bielskas. Formal methods for an iterated volunteer’s
+dilemma. In Robert Thomson, Muhammad Nihal Hussain, Christopher Dancy, and Aryn Pyke, editors, Social,
+Cultural,andBehavioralModeling,pages81–90,Cham,2021.SpringerInternationalPublishing. doi:10.1007/978-
+3-030-80387-2_8. [p. 1]
+[17] John M Darley and Bibb Latané. Bystander intervention in emergencies: diffusion of responsibility. Journal of
+personality and social psychology, 8(4p1):377, 1968. doi:https://doi.org/10.1037/h0025589. [p. 1]
+[18] GregBarronandEldadYechiam. Privatee-mailrequestsandthediffusionofresponsibility. ComputersinHuman
+Behavior, 18(5):507–520, 2002. doi:10.1016/S0747-5632(02)00007-9. [p. 1]
+[19] JacobK.Goeree,CharlesA.Holt,andAngelaM.Smith.Anexperimentalexaminationofthevolunteer’sdilemma.
+Games and Economic Behavior, 102:303–315, 2017. doi:10.1016/j.geb.2017.01.002. [p. 1]
+[20] WojtekPrzepiorkaandAndreasDiekmann. Heterogeneousgroupsovercomethediffusionofresponsibilityproblem
+in social norm enforcement. PloS one, 13(11):e0208129, 2018. doi:10.1371/journal.pone.0208129. [p. 1]
+[21] Maarten Wolsink. The siting problem: wind power as a social dilemma. In European Community Wind Energy
+Conference: Proceedings of an International Conference, pages 10–14, 1990. [p. 1]
+[22] Maarten Wolsink. Entanglement of interests and motives: assumptions behind the NIMBY-theory on facility
+siting. Urban studies, 31(6):851–866, 1994. doi:10.1080/00420989420080711. [p. 1]
+[23] William A Searcy and Stephen Nowicki. The evolution of animal communication: reliability and deception in
+signaling systems. Princeton University Press, 2010. [p. 1]
+[24] MarcoArchetti. Astrategytoincreasecooperationinthevolunteer’sdilemma: reducingvigilanceimprovesalarm
+calls. Evolution, 65(3):885–892, 2011. doi:10.1111/j.1558-5646.2010.01176.x. [p. 1]
+[25] Alexander Mielke, Catherine Crockford, and Roman M. Wittig. Snake alarm calls as a public good in sooty
+mangabeys. Animal Behaviour, 158:201–209, 2019. doi:10.1016/j.anbehav.2019.10.001. [p. 1]
+[26] Marc Steinegger, Hanaa Sarhan, and Redouan Bshary. Laboratory experiments reveal effects of group size on
+hunting performance in yellow saddle goatfish, parupeneus cyclostomus. Animal Behaviour, 168:159–167, 2020.
+doi:10.1016/j.anbehav.2020.08.018. [p. 1]
+[27] Aviad Heifetz, Ruth Heller, and Roni Ostreiher. Do Arabian babblers play mixed strategies in a “volunteer’s
+dilemma”? JournalofBehavioralandExperimentalEconomics,91:101661,2021. doi:10.1016/j.socec.2021.101661.
+[p. 1]
+[28] CarelPvanSchaik,RedouanBshary,GretchenWagner,andFilipeCunha.Maleanti-predationservicesinprimates
+as costly signalling? a comparative analysis and review. Ethology, 128(1):1–14, 2022. doi:10.1111/eth.13233. [p.
+1]
+[29] Mark Broom and Jan Rychtář. Game-theoretical models in biology. Chapman and Hall/CRC, 2022.
+doi:10.1201/9781003024682. [p. 1]
+[30] Rebecca F.B. Padget, Tim W. Fawcett, and Safi K Darden. Guppies in large groups cooperate more frequently
+in an experimental test of the group size paradox. Proceedings of the Royal Society B, 290(2002):20230790, 2023.
+doi:10.1098/rspb.2023.0790. [p. 1]
+[31] Bryce Morsky and Dervis Can Vural. Cheater-altruist synergy in public goods games. Journal of Theoretical
+Biology, 454:231–239, 2018. doi:10.1016/j.jtbi.2018.06.012. [p. 1]
+[32] Marco Archetti and Kenneth J Pienta. Cooperation among cancer cells: applying game theory to cancer. Nature
+Reviews Cancer, 19(2):110–117, 2019. doi:10.1038/s41568-018-0083-7. [p. 1]
+[33] Claudia Manini and José I López. Ecology and games in cancer: new insights into the disease. Pathologica,
+114(5):347, 2022. doi:10.32074/1591-951X-798. [p. 1]
+[34] Makmiller Pedroso. The impact of population bottlenecks on the social lives of microbes. Biological Theory,
+13(3):190–198, Sep 2018. doi:10.1007/s13752-018-0298-6. [p. 1]
+[35] Matishalin Patel, Ben Raymond, Michael B. Bonsall, and Stuart A. West. Crystal toxins and the volunteer’s
+dilemma in bacteria. Journal of Evolutionary Biology, 32(4):310–319, 2019. doi:10.1111/jeb.13415. [p. 1]
+[36] Jeroen Weesie. Incomplete information and timing in the volunteer’s dilemma: A comparison of four models.
+Journal of Conflict Resolution, 38(3):557–585, 1994. doi:10.1177/0022002794038003008. [p. 1]
+[37] Kai A. Konrad and Florian Morath. The volunteer’s dilemma in finite populations. Journal of Evolutionary
+Economics, 31(4):1277–1290, Sep 2021. doi:10.1007/s00191-020-00719-y. [p. 1]
+[38] Anatol Rapoport. Experiments with N-person social traps I: prisoner’s dilemma, weak prisoner’s
+dilemma, volunteer’s dilemma, and largest number. Journal of conflict resolution, 32(3):457–472, 1988.
+doi:10.1177/002200278803200300. [p. 1]
+[39] J. Keith Murnighan, Jae Wook Kim, and A. Richard Metzger. The volunteer dilemma. Administrative Science
+Quarterly, 38(4):515–538, 1993. doi:10.2307/2393335. [p. 1]
+23
+
+[40] Axel Franzen. Group size effects in social dilemmas: A review of the experimental literature and some new
+resultsforone-shotN-PDgames. InUlrichSchulz,WulfAlbers,andUlrichMueller,editors,SocialDilemmasand
+Cooperation, pages 117–146, Berlin, Heidelberg, 1994. Springer Berlin Heidelberg. doi:10.1007/978-3-642-78860-
+4_7. [p. 1]
+[41] Jae Wook Kim and J Keith Murnighan. The effects of connectedness and self interest in the organizational
+volunteer dilemma. International Journal of Conflict Management, 8(1):32–51, 1997. doi:10.1108/eb022789. [p.
+1]
+[42] Wojtek Przepiorka and Andreas Diekmann. Individual heterogeneity and costly punishment: a vol-
+unteer’s dilemma. Proceedings of the Royal Society B: Biological Sciences, 280(1759):20130247, 2013.
+doi:10.1098/rspb.2013.0247. [p. 1]
+[43] AxelFranzen.Thevolunteer’sdilemma: Theoreticalmodelsandempiricalevidence.InResolvingSocialDilemmas,
+pages 135–148. Psychology Press, 2013. [p. 1]
+[44] AndreasDiekmannandWojtekPrzepiorka.“TakeOnefortheTeam!” IndividualHeterogeneityandtheEmergence
+of Latent Norms in a Volunteer’s Dilemma. Social Forces, 94(3):1309–1333, 2015. doi:10.1093/sf/sov107. [p. 1]
+[45] Joachim I Krueger, Johannes Ullrich, and Leonard J Chen. Expectations and decisions in the volun-
+teer’s dilemma: Effects of social distance and social projection. Frontiers in Psychology, 7:1909, 2016.
+doi:10.3389/fpsyg.2016.01909. [p. 1]
+[46] Andrew J. Healy and Jennifer G. Pate. Cost asymmetry and incomplete information in a volunteer’s dilemma
+experiment. Social Choice and Welfare, 51(3):465–491, Oct 2018. doi:10.1007/s00355-018-1124-6. [p. 1]
+[47] AnitaKopányi-Peuker. Yes,i’lldoit: Alarge-scaleexperimentonthevolunteer’sdilemma. Journal of Behavioral
+and Experimental Economics, 80:211–218, 2019. doi:10.1016/j.socec.2019.04.004. [p. 1]
+[48] Wojtek Przepiorka, Loes Bouman, and Erik W. de Kwaadsteniet. The emergence of conventions in the repeated
+volunteer’s dilemma: The role of social value orientation, payoff asymmetries and focal points. Social Science
+Research, 93:102488, 2021. doi:10.1016/j.ssresearch.2020.102488. [pp. 1, 3]
+[49] Daniel Villiger, Johannes Ullrich, and Joachim I. Krueger. The role of certainty in a two-person volunteer’s
+dilemma. Social Psychological and Personality Science,14(4):459–469,2023. doi:10.1177/19485506221107268. [p.
+1]
+[50] Andreas Diekmann. Cooperation in an asymmetric volunteer’s dilemma game theory and experimental evidence.
+International Journal of Game Theory, 22(1):75–85, Mar 1993. doi:10.1007/BF01245571. [p. 1]
+[51] Jeroen Weesie. Asymmetry and timing in the volunteer’s dilemma. Journal of conflict resolution, 37(3):569–590,
+1993. doi:10.1177/0022002793037003008. [p. 1]
+[52] Jun-Zhou He, Rui-Wu Wang, and Yao-Tang Li. Evolutionary stability in the asymmetric volunteer’s dilemma.
+PloS one, 9(8):e103931, 2014. doi:10.1371/journal.pone.0103931. [p. 1]
+[53] Zi-Xuan Guo, Jun-Zhou He, Qing-Ming Li, Lei Shi, and Rui-Wu Wang. Asymmetric interaction and diverse
+forms in public goods production in volunteer dilemma game. Chaos, Solitons & Fractals, 166:112928, 2023.
+doi:10.1016/j.chaos.2022.112928. [p. 1]
+[54] XiaojieChen,ThiloGross,andUlfDieckmann. Sharedrewardingovercomesdefectiontrapsingeneralizedvolun-
+teer’s dilemmas. Journal of theoretical biology, 335:13–21, 2013. doi:10.1016/j.jtbi.2013.06.014. [p. 1]
+[55] ShakunDMagoandJenniferPate. Greedandfear: Competitiveandcharitablepriminginathresholdvolunteer’s
+dilemma. Economic Inquiry, 61(1):138–161, 2023. doi:10.1111/ecin.13117. [p. 1]
+[56] PeterD.Dwyer.Mamihlapinatapai: Gamespeople(might)play.Oceania,70(3):231–251,2000.doi:10.1002/j.1834-
+4461.2000.tb03021.x. [p. 1]
+[57] JeroenWeesieandAxelFranzen.Costsharinginavolunteer’sdilemma.JournalofConflictResolution,42(5):600–
+618, 1998. doi:10.1177/0022002798042005004. [pp. 2, 4, 6]
+[58] Rabah Amir, Dominika Machowska, and Jingwen Tian. Volunteer’s dilemma: Cost-sharing revisited.
+https://jingwen-tian.com/files/volunteer_dilemma_cost_sharing.pdf, 2024. Accessed: 08 September 2024. [p.
+2]
+[59] Debing Ni and Yuntong Wang. Sharing a polluted river. Games and Economic Behavior, 60(1):176–186, 2007.
+doi:10.1016/j.geb.2006.10.001. [p. 2]
+[60] Baomin Dong, Debing Ni, and Yuntong Wang. Sharing a polluted river network. Environmental and Resource
+Economics, 53(3):367–387, Nov 2012. doi:10.1007/s10640-012-9566-2. [p. 2]
+[61] LucaMarinattoandTullioWeber. Aquantumapproachtostaticgamesofcompleteinformation. Physics Letters
+A, 272(5-6):291–303, 2000. doi:10.1016/S0375-960100)00441-2. [p. 2]
+[62] Ahmad Nawaz and A H Toor. Generalized quantization scheme for two-person non-zero sum games. Journal of
+Physics A: Mathematical and General, 37(47):11457, nov 2004. doi:10.1088/0305-4470/37/47/014. [p. 2]
+[63] Jens Eisert, Martin Wilkens, and Maciej Lewenstein. Quantum games and quantum strategies. Physical Review
+Letters, 83(15):3077, 1999. doi:10.1103/PhysRevLett.83.3077. [pp. 2, 8, 21]
+24
+
+[64] MichaelA.NielsenandIsaacL.Chuang.QuantumComputationandQuantumInformation.CambridgeUniversity
+Press, 2010. doi:10.1017/CBO9780511976667. [p. 2]
+[65] Ann E. Cudd. Game theory and the history of ideas about rationality: An introductory survey. Economics and
+Philosophy, 9(1):101–133, 1993. doi:10.1017/S0266267100005137. [p. 2]
+[66] John von Neumann and Oskar Morgenstern. Theory of Games and Economic Behavior. Princeton University
+Press, Princeton, 2004. doi:10.1515/9781400829460. [p. 2]
+[67] Panos M Pardalos, Athanasios Migdalas, and Leonidas Pitsoulis. Pareto optimality, game theory and equilibria,
+volume 17. Springer Science & Business Media, 2008. doi:10.1007/978-0-387-77247-9. [pp. 2, 4]
+[68] Yanis Varoufakis. Game theory: Can it unify the social sciences? Organization Studies, 29(8-9):1255–1277, 2008.
+doi:10.1177/0170840608094779. [p. 2]
+[69] J. von Neumann. Zur theorie der gesellschaftsspiele. Mathematische Annalen, 100(1):295–320, Dec 1928.
+doi:10.1007/BF01448847. [p. 2]
+[70] JohnFNashJr. Equilibriumpointsinn-persongames. Proceedingsofthenationalacademyofsciences,36(1):48–
+49, 1950. doi:10.1073/pnas.36.1.48. [pp. 2, 4]
+[71] DavidA.Meyer.Quantumstrategies.Phys.Rev.Lett.,82:1052–1055,Feb1999.doi:10.1103/PhysRevLett.82.1052.
+[p. 2]
+[72] Jens Eisert and Martin Wilkens. Quantum games. Journal of Modern Optics, 47(14-15):2543–2556, 2000.
+doi:10.1080/09500340008232180. [pp. 2, 3]
+[73] JiangfengDu, XiaodongXu, HuiLi, XianyiZhou, andRongdianHan. Playingprisoner’sdilemmawithquantum
+rules. Fluctuation and Noise Letters, 2(04):R189–R203, 2002. doi:10.1142/S0219477502000993. [p. 2]
+[74] ZhiyuanDongandAi-GuoWu. Thesuperiorityofquantumstrategyin3-playerprisoner’sdilemma. Mathematics,
+9:1443, 2021. doi:10.3390/math9121443. [p. 2]
+[75] Adrian P Flitney, Joseph Ng, and Derek Abbott. Quantum Parrondo’s games. Physica A: Statistical Mechanics
+and its Applications, 314(1-4):35–42, 2002. doi:10.1016/S0378-4371(02)01084-1. [p. 3]
+[76] Joel Weijia Lai and Kang Hao Cheong. Parrondo’s paradox from classical to quantum: A review. Nonlinear
+Dynamics, 100(1):849–861, 2020. doi:10.1007/s11071-020-05496-8. [p. 3]
+[77] E.WPiotrowskiandJSładkowski. Quantummarketgames. PhysicaA:StatisticalMechanicsanditsApplications,
+312(1):208–216, 2002. doi:10.1016/S0378-4371(02)00842-7. [p. 3]
+[78] AIqbalandAHToor.Quantumcooperativegames.PhysicsLettersA,293(3-4):103–108,2002.doi:10.1016/S0375-
+9601(02)00003-8. [p. 3]
+[79] JiangfengDu,XiaodongXu,HuiLi,XianyiZhou,andRongdianHan. Nashequilibriuminthequantumbattleof
+sexes game. arXiv preprint quant-ph/0010050, 2000. doi:10.48550/arXiv.quant-ph/0010050. [p. 3]
+[80] Jiangfeng Du, Hui Li, Xiaodong Xu, Mingjun Shi, Xianyi Zhou, and Rongdian Han. Remark on quantum battle
+of the sexes game. arXiv preprint quant-ph/0103004, 2001. doi:10.48550/arXiv.quant-ph/0103004 . [p. 3]
+[81] Ahmad Nawaz and AH Toor. Dilemma and quantum battle of sexes. Journal of Physics A: Mathematical and
+General, 37(15):4437, 2004. doi:10.1088/0305-4470/37/15/011. [p. 3]
+[82] Adriane Consuelo-Leal, Arthur G Araujo-Ferreira, Everton Lucas-Oliveira, Tito J Bonagamba, and Ruben Auc-
+caise. Pareto-optimal solution for the quantum battle of the sexes. Quantum Information Processing, 19:1–21,
+2020. doi:10.1007/s11128-019-2536-7. [p. 3]
+[83] Marek Szopa. Efficiency of classical and quantum games equilibria. Entropy, 23(5):506, 2021.
+doi:10.3390/e23050506. [p. 3]
+[84] Simon C Benjamin and Patrick M Hayden. Multiplayer quantum games. Physical Review A, 64(3):030301, 2001.
+doi:10.1103/PhysRevA.64.030301. [p. 3]
+[85] Qing Chen, Yi Wang, Jin-Tao Liu, and Ke-Lin Wang. N-player quantum minority game. Physics Letters A,
+327(2):98–102, 2004. doi:10.1016/j.physleta.2004.05.012. [p. 3]
+[86] Roland Kay, Neil F Johnson, and Simon C Benjamin. Evolutionary quantum game. Journal of Physics A:
+Mathematical and General, 34(41):L547, 2001. doi:10.1088/0305-4470/34/41/101. [p. 3]
+[87] Archan Mukhopadhyay, Saikat Sur, Tanay Saha, Shubhadeep Sadhukhan, and Sagar Chakraborty. Repeated
+quantumgameasastochasticgame: Effectsoftheshadowofthefutureandentanglement. Physica A: Statistical
+Mechanics and its Applications, 637:129613, 2024. doi:10.1016/j.physa.2024.129613. [p. 3]
+[88] Kazuki Ikeda. Foundation of quantum optimal transport and applications. Quantum Information Processing,
+19(1):25, 2020. doi:10.1007/s11128-019-2519-8. [p. 3]
+[89] Kazuki Ikeda and Shoto Aoki. Infinitely repeated quantum games and strategic efficiency. Quantum Information
+Processing, 20(12):387, 2021. doi:10.1007/s11128-021-03295-7. [p. 3]
+[90] DuJiang-Feng,LiHui,XuXiao-Dong,ZhouXian-Yi,andHanRong-Dian.Multi-playerandmulti-choicequantum
+game. Chinese Physics Letters, 19(9):1221, sep 2002. doi:10.1088/0256-307X/19/9/301. [p. 3]
+25
+
+[91] HuiLi,JiangfengDu,andSergeMassar. Continuous-variablequantumgames. Physics Letters A,306(2-3):73–78,
+2002. doi:10.1016/S0375-9601(02)01628-6. [p. 3]
+[92] John B DeBrota and Peter J Love. Quantum Bayesian games. arXiv preprint arXiv:2408.02058, 2024.
+doi:10.48550/arXiv.2408.02058. [p. 3]
+[93] Jiangfeng Du, Xiaodong Xu, Hui Li, Xianyi Zhou, and Rongdian Han. Entanglement playing a dominating role
+in quantum games. Physics Letters A, 289(1-2):9–15, 2001. doi:10.1016/S0375-9601(01)00575-8. [p. 3]
+[94] Jiangfeng Du, Hui Li, Xiaodong Xu, Xianyi Zhou, and Rongdian Han. Entanglement enhanced multiplayer
+quantum games. Physics Letters A, 302(5-6):229–233, 2002. doi:10.1016/S0375-9601(02)01144-1. [p. 3]
+[95] Sahin K Özdemir, Junichi Shimamura, and Nobuyuki Imoto. A necessary and sufficient condition to play games
+in quantum mechanical settings. New Journal of Physics, 9(2):43, 2007. doi:10.1088/1367-2630/9/2/043. [p. 3]
+[96] Angsheng Li and Xi Yong. Entanglement guarantees emergence of cooperation in quantum prisoner’s dilemma
+games on networks. Scientific reports, 4(1):6286, 2014. doi:10.1038/srep06286. [p. 3]
+[97] Noureldin Mohamed Abdelaal Ahmed Mohamed, Huang Taisheng, and Pang Jinhui. Quantum game theory on
+entangledplayers.InInternationalConferenceonIntelligentInformationTechnologiesforIndustry,pages291–301.
+Springer, 2023. doi:10.1007/978-3-031-43789-2_27. [p. 3]
+[98] Ahmad Nawaz and AH Toor. Quantum games and quantum discord. arXiv preprint arXiv:1012.1428, 2010.
+doi:10.48550/arXiv.1012.1428. [p. 3]
+[99] Zhaohui Wei and Shengyu Zhang. Quantum game players can have advantage without discord. Information and
+Computation, 256:174–184, 2017. doi:10.1016/j.ic.2017.07.004. [p. 3]
+[100] Neil F Johnson. Playing a quantum game with a corrupted source. Physical Review A, 63(2):020302, 2001.
+doi:10.1103/PhysRevA.63.020302. [p. 3]
+[101] L.K. Chen, Huiling Ang, D. Kiang, L.C. Kwek, and C.F. Lo. Quantum prisoner dilemma under decoherence.
+Physics Letters A, 316(5):317–323, 2003. doi:10.1016/S0375-9601(03)01175-7. [p. 3]
+[102] AdrianPFlitneyandDerekAbbott. Quantumgameswithdecoherence. Journal of Physics A: Mathematical and
+General, 38(2):449, 2004. doi:10.1088/0305-4470/38/2/011. [p. 3]
+[103] Cao Shuai, Fang Mao-Fa, and Zheng Xiao-Juan. The effect of quantum noise on multiplayer quantum game.
+Chinese Physics, 16(4):915, 2007. doi:10.1088/1009-1963/16/4/008. [p. 3]
+[104] Zhiming Huang and Daowen Qiu. Quantum games under decoherence. International Journal of Theoretical
+Physics, 55:965–992, 2016. doi:10.1007/s10773-015-2741-9. [p. 3]
+[105] SalmanKhanandSherAlam. ThedynamicsofNashequilibriumundernon-Markovianclassicalnoiseinquantum
+prisoners’ dilemma. Reports on Mathematical Physics, 81(3):399–413, 2018. doi:10.1016/S0034-4877(18)30056-9.
+[p. 3]
+[106] PranavKairon,KishoreThapliyal,RSrikanth,andAnirbanPathak.Noisythree-playerdilemmagame: robustness
+of the quantum advantage. Quantum information processing, 19:1–18, 2020. doi:10.1007/s11128-020-02830-2. [p.
+3]
+[107] Alexis R Legón and Ernesto Medina. Joint probabilities approach to quantum games with noise. Entropy,
+25(8):1222, 2023. doi:10.3390/e25081222. [p. 3]
+[108] Agustin Silva, Omar Gustavo Zabaleta, and Constancio Miguel Arizmendi. Maximizing local rewards
+on multi-agent quantum games through gradient-based learning strategies. Entropy, 25(11):1484, 2023.
+doi:10.3390/e25111484. [p. 3]
+[109] Piotr Frąckiewicz. Strong isomorphism in Eisert-Wilkens-Lewenstein type quantum games. Advances in Mathe-
+matical Physics, 2016(1):4180864, 2016. doi:10.1155/2016/4180864. [p. 3]
+[110] PiotrFrąckiewicz,MarekSzopa,MarcinMakowski,andEdwardPiotrowski. Nashequilibriaofquantumgamesin
+thespecialtwo-parameterstrategyspace. Applied Sciences,12(22):11530,2022. doi:10.3390/app122211530. [p.3]
+[111] Piotr Frąckiewicz and Jarosław Pykacz. Quantum games with strategies induced by basis change rules. Interna-
+tional Journal of Theoretical Physics, 56(12):4017–4028, 2017. doi:10.1007/s10773-017-3423-6. [p. 3]
+[112] PiotrFrąckiewiczandMarekSzopa. Permissibleextensionsofclassicaltoquantumgamescombiningthreestrate-
+gies. Quantum Information Processing, 23(3):75, 2024. doi:10.1007/s11128-024-04283-3. [p. 3]
+[113] Piotr Frąckiewicz, Anna Gorczyca-Goraj, and Marek Szopa. Permissible four-strategy quantum extensions of
+classical games. arXiv preprint arXiv:2405.07380, 2024. doi:10.48550/arXiv.2405.07380 . [p. 3]
+[114] Bin Cheng, Xiu-Hao Deng, Xiu Gu, Yu He, Guangchong Hu, Peihao Huang, Jun Li, Ben-Chuan Lin, Dawei Lu,
+Yao Lu, Chudan Qiu, Hui Wang, Tao Xin, Shi Yu, Man-Hong Yung, Junkai Zeng, Song Zhang, Youpeng Zhong,
+Xinhua Peng, Franco Nori, and Dapeng Yu. Noisy intermediate-scale quantum computers. Frontiers of Physics,
+18(2):21308, Mar 2023. doi:10.1007/s11467-022-1249-z. [p. 3]
+[115] JingLu,LanZhou,andLe-ManKuang.Linearopticsimplementationforquantumgamewithtwoplayers.Physics
+Letters A, 330(1-2):48–53, 2004. doi:10.1016/j.physleta.2004.07.063. [p. 3]
+[116] Christian Schmid, Adrian P Flitney, Witlef Wieczorek, Nikolai Kiesel, Harald Weinfurter, and Lloyd CL Hollen-
+berg. Experimentalimplementationofafour-playerquantumgame. New Journal of Physics, 12(6):063031, 2010.
+doi:10.1088/1367-2630/12/6/063031. [p. 3]
+26
+
+[117] Jiangfeng Du, Hui Li, Xiaodong Xu, Mingjun Shi, Jihui Wu, Xianyi Zhou, and Rongdian Han. Experi-
+mental realization of quantum games on a quantum computer. Physical Review Letters, 88(13):137902, 2002.
+doi:10.1103/PhysRevLett.88.137902. [p. 3]
+[118] Avik Mitra, K. Sivapriya, and Anil Kumar. Experimental implementation of a three qubit quantum game with
+corruptsourceusingnuclearmagneticresonancequantuminformationprocessor. JournalofMagneticResonance,
+187(2):306–313, 2007. doi:10.1016/j.jmr.2007.05.013. [p. 3]
+[119] Iulia Maria Buluta, Shingo Fujiwara, and Shuichi Hasegawa. Quantum games in ion traps. Physics Letters A,
+358(2):100–104, 2006. doi:10.1016/j.physleta.2006.04.114. [p. 3]
+[120] Kanyangzi Xu and Zhe Wu. Experimental implementation of quantum prisoner dilemma on IBM quantum com-
+puters. In2022 15th International Conference on Advanced Computer Theory and Engineering (ICACTE),pages
+13–18. IEEE, 2022. doi:10.1109/ICACTE55855.2022.9943732. [p. 3]
+[121] Kay-Yut Chen and Tad Hogg. How well do people play a quantum prisoner’s dilemma? Quantum Information
+Processing, 5:43–67, 2006. doi:10.1007/s11128-006-0012-7. [p. 3]
+[122] FaisalShahKhanandNingBao. Quantumprisoner’sdilemmaandhighfrequencytradingonthequantumcloud.
+Frontiers in Artificial Intelligence, 4:769392, 2021. doi:10.3389/frai.2021.769392. [p. 3]
+[123] Marek Szopa. How quantum prisoner’s dilemma can support negotiations. Optimum. Studia Ekonomiczne, 5,
+2014. doi:10.15290/ose.2014.05.71.07. [p. 3]
+[124] Yanhui Li, Yan Zhao, Jing Fu, and Lu Xu. Reducing food loss and waste in a two-echelon food supply chain: A
+quantumgameapproach. JournalofCleanerProduction,285:125261,2021. doi:10.1016/j.jclepro.2020.125261. [p.
+3]
+[125] Wei He, Yu Zhang, Dewei Kong, Shilei Li, Zhuo Wu, Lizhou Zhang, and Ping Liu. Promoting green-building
+development in sustainable development strategy: a multi-player quantum game approach. Expert Systems with
+Applications, 240:122218, 2024. doi:10.1016/j.eswa.2023.122218. [p. 3]
+[126] Wei He, Yu Zhang, Shilei Li, Wei Li, Zhen Wang, Ping Liu, Lizhou Zhang, and Dewei Kong. Reducing betrayal
+behavior in green building construction: A quantum game approach. Journal of Cleaner Production, 463:142760,
+2024. doi:10.1016/j.jclepro.2024.142760. [p. 3]
+[127] BenhongPeng,NanjieXu,RongLuo,EhsanElahi,andAnxiaWan. Promotinggreeninvestmentbehaviorin“belt
+androad” energyprojects: Aquantumgameapproach. Technological Forecasting and Social Change,204:123416,
+2024. doi:10.1016/j.techfore.2024.123416. [p. 3]
+[128] AhmedSElgazzar. Coopetitioninquantumprisoner’sdilemmaandCOVID-19. Quantuminformationprocessing,
+20(3):102, 2021. doi:10.1007/s11128-021-03054-8. [p. 3]
+[129] HimanshuMiriyalaandSBalakrishnan. OpenaccesspublishingandquantumgametheoryundermodifiedEWL
+scheme.PhysicaA:StatisticalMechanicsanditsApplications,647:129922,2024.doi:10.1016/j.physa.2024.129922.
+[p. 3]
+[130] O.G. Zabaleta, J.P. Barrangú, and C.M. Arizmendi. Quantum game application to spectrum scarcity problems.
+Physica A: Statistical Mechanics and its Applications, 466:455–461, 2017. doi:10.1016/j.physa.2016.09.054. [p. 3]
+[131] Neal Solmeyer, Ricky Dixon, and Radhakrishnan Balu. Quantum routing games. Journal of Physics A: Mathe-
+matical and Theoretical, 51(45):455304, 2018. doi:10.1088/1751-8121/aae31f. [p. 3]
+[132] Indrakshi Dey, Nicola Marchetti, Marcello Caleffi, and Angela Sara Cacciapuoti. Quantum game theory meets
+quantum networks. IEEE Wireless Communications, 31(4):90–96, 2024. doi:10.1109/MWC.001.2300288. [p. 3]
+[133] Adrian P Flitney and Derek Abbott. An introduction to quantum game theory. Fluctuation and Noise Letters,
+2(04):R175–R187, 2002. doi:10.1142/S0219477502000981. [p. 3]
+[134] Sowmitra Das. Quantumizing classical games: An introduction to quantum game theory. arXiv preprint
+arXiv:2305.00368, 2023. doi:10.48550/arXiv.2305.00368. [p. 3]
+[135] HongGuo,JuhengZhang,andGaryJ.Koehler.Asurveyofquantumgames.DecisionSupportSystems,46(1):318–
+332, 2008. doi:10.1016/j.dss.2008.07.001. [p. 3]
+[136] Dingxuan Huang and Shuliang Li. A survey of the current status of research on quantum games.
+In 2018 4th International Conference on Information Management (ICIM), pages 46–52. IEEE, 2018.
+doi:10.1109/INFOMAN.2018.8392807. [p. 3]
+[137] Vassili Kolokoltsov. Quantum games: a survey for mathematicians. arXiv preprint arXiv:1909.04466, 2019.
+doi:10.48550/arXiv.1909.04466. [p. 3]
+[138] Faisal Shah Khan, Neal Solmeyer, Radhakrishnan Balu, and Travis S. Humble. Quantum games: a review of the
+history, current state, and interpretation. Quantum Information Processing, 17(11), 2018. doi:10.1007/s11128-
+018-2082-8. [p. 3]
+[139] Indranil Ghosh. Quantum game theory — i: A comprehensive study. Resonance, 26:671–684, 2021.
+doi:10.1007/s12045-021-1168-2. [p. 3]
+[140] Anatol Rapoport and Albert M Chammah. The game of chicken. American Behavioral Scientist, 10(3):10–28,
+1966. doi:10.1177/000276426601000303. [p. 5]
+27
+
+[141] Eric W. Weisstein. Lambert W-Function. From MathWorld–A Wolfram Web Resource. https://mathworld.
+wolfram.com/LambertW-Function.html. Accessed: 08 September 2024. [p. 7]
+[142] Wolfram Research. ProductLog. https://reference.wolfram.com/language/ref/ProductLog.html, 2022. Ac-
+cessed: 08 September 2024. [p. 7]
+28

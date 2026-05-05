@@ -3,6 +3,10 @@ import json
 import os
 from pathlib import Path
 
+from dotenv import load_dotenv
+
+load_dotenv(Path(__file__).parent.parent / ".env")
+
 from score import flatten_mindmap, score_bertscore, score_cosine
 from judge import score_judge
 
@@ -14,7 +18,7 @@ SYSTEMS = ["edumap", "tfidf", "notebooklm", "multimodal"]
 def run() -> None:
     extracted_dir = BENCHMARK_DIR / "extracted"
     outputs_dir = BENCHMARK_DIR / "outputs"
-    api_key = os.environ["GOOGLE_API_KEY"]
+    api_key = os.environ["OPENAI_API_KEY"]
 
     papers = sorted(p.stem for p in extracted_dir.glob("*.txt"))
     systems_present = [s for s in SYSTEMS if (outputs_dir / s).is_dir()]

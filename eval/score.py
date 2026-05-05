@@ -1,6 +1,9 @@
-from bert_score import score as bert_score_fn
+from bert_score import score as bert_score_fn, BERTScorer
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity as sk_cosine
+
+# Load once at import time — reused across all score_bertscore calls
+_scorer = BERTScorer(lang="en", model_type="roberta-large", rescale_with_baseline=False)
 
 
 def flatten_mindmap(md_content: str) -> str:
@@ -15,13 +18,7 @@ def flatten_mindmap(md_content: str) -> str:
 
 def score_bertscore(source_text: str, mindmap_flat: str) -> dict:
     """Compute BERTScore. mindmap_flat is the candidate; source_text is the reference."""
-    P, R, F1 = bert_score_fn(
-        [mindmap_flat],
-        [source_text],
-        lang="en",
-        model_type="roberta-large",
-        verbose=False,
-    )
+    P, R, F1 = _scorer.score([mindmap_flat], [source_text])
     return {
         "precision": round(float(P[0]), 4),
         "recall": round(float(R[0]), 4),

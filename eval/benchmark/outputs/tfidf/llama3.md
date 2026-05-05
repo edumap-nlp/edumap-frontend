@@ -1,0 +1,19 @@
+# The Llama 3 Herd of Models
+## Arxiv / Arxiv Preprint / Preprint / Preprint Arxiv
+Fanjia Yan, Huanzhi Mao, Charlie Cheng-Jie Ji, Tianjun Zhang, Shishir G.
+Jörg Tiedemann.
+## Et Al / Et / Al / Speech
+techniques such as rejection sampling (Bai et al., 2022), supervised finetuning (Sanh…
+Model Preference Model Preference PM for Llama 3 8B PM for Llama…
+## Data / Code / Model / Preference
+%of Avg.#turns Avg.#tokens Avg.#tokens Avg.#tokens Dataset comparisons perdialog perexample inprompt inresponse General…
+them to different locations (e.g., user, ipython) within a single dialog turn.
+## Safety / Llama / Refusal / Model
+0.25 0.20 0.15 0.10 0.05 0.00 0.0 0.1 0.2 0.3 0.4 0.5…
+0.25 0.20 0.15 0.10 0.05 0.00 English French German Hindi Italian Portuguese…
+## Parallelism / Training / Network / Gpu
+GPUs TP CP PP DP Seq.Len.
+Pipeline parallelism partitions eight pipeline stages (0 to 7) across Figure6 IllustrationofpipelineparallelisminLlama3.
+## Llama / Gpt / Results / Model
+(Shi et al., 2022).
+ZeroSCROLLS InfiniteBench NIH QuALITY Qasper SQuALITY En.QA En.MC Multi-needle Llama 3 8B…

@@ -35,6 +35,9 @@ coverage/
 # Agent / LLM assistant instruction files
 AGENTS.md
 
+# Eval secrets
+eval/.env
+
 # Eval pipeline outputs (generated, not source)
 eval/results/scores.json
 eval/results/summary.csv
