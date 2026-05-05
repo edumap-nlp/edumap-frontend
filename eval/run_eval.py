@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 load_dotenv(Path(__file__).parent.parent / ".env")
 
 from score import flatten_mindmap, score_bertscore, score_cosine
-from judge import score_judge
+from judge import score_judge, CRITERIA
 
 BENCHMARK_DIR = Path(__file__).parent / "benchmark"
 RESULTS_DIR = Path(__file__).parent / "results"
@@ -20,8 +20,23 @@ def run() -> None:
     outputs_dir = BENCHMARK_DIR / "outputs"
     api_key = os.environ["OPENAI_API_KEY"]
 
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+
     papers = sorted(p.stem for p in extracted_dir.glob("*.txt"))
     systems_present = [s for s in SYSTEMS if (outputs_dir / s).is_dir()]
+
+    criteria_keys = list(CRITERIA.keys())
+
+    # Write CSV header once
+    csv_path = RESULTS_DIR / "summary.csv"
+    with open(csv_path, "w", newline="", encoding="utf-8") as f:
+        csv.writer(f).writerow(
+            ["paper", "system",
+             "bertscore_precision", "bertscore_recall", "bertscore_f1",
+             "cosine_similarity"]
+            + criteria_keys
+        )
+
     records = []
 
     for paper in papers:
@@ -48,38 +63,23 @@ def run() -> None:
                 "judge": judge,
             }
             records.append(record)
+
+            # Write incrementally so a crash doesn't lose completed work
+            with open(RESULTS_DIR / "scores.json", "w", encoding="utf-8") as f:
+                json.dump(records, f, indent=2)
+            with open(csv_path, "a", newline="", encoding="utf-8") as f:
+                csv.writer(f).writerow(
+                    [paper, system,
+                     bert["precision"], bert["recall"], bert["f1"],
+                     cosine]
+                    + [judge.get(k, {}).get("score", 0) for k in criteria_keys]
+                )
+
             print(
                 f"  {paper}/{system}: "
                 f"BERTScore F1={bert['f1']:.3f}  cosine={cosine:.3f}  "
                 f"judge avg={sum(v['score'] for v in judge.values()) / len(judge):.1f}"
             )
-
-    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-
-    with open(RESULTS_DIR / "scores.json", "w", encoding="utf-8") as f:
-        json.dump(records, f, indent=2)
-
-    with open(RESULTS_DIR / "summary.csv", "w", newline="", encoding="utf-8") as f:
-        writer = csv.writer(f)
-        writer.writerow([
-            "paper", "system",
-            "bertscore_precision", "bertscore_recall", "bertscore_f1",
-            "cosine_similarity",
-            "conceptual_accuracy", "coverage",
-            "hierarchical_organization", "study_usefulness",
-        ])
-        for r in records:
-            writer.writerow([
-                r["paper"], r["system"],
-                r["bertscore"]["precision"],
-                r["bertscore"]["recall"],
-                r["bertscore"]["f1"],
-                r["cosine_similarity"],
-                r["judge"]["conceptual_accuracy"]["score"],
-                r["judge"]["coverage"]["score"],
-                r["judge"]["hierarchical_organization"]["score"],
-                r["judge"]["study_usefulness"]["score"],
-            ])
 
     print(f"\nResults written to {RESULTS_DIR}/")
 

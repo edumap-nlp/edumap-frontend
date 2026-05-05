@@ -1,5 +1,6 @@
 import json
-from openai import OpenAI
+import time
+from openai import OpenAI, RateLimitError
 
 CRITERIA = {
     "conceptual_accuracy": (
@@ -54,14 +55,40 @@ def score_judge(source_text: str, mindmap_md: str, api_key: str) -> dict:
 
     for criterion, definition in CRITERIA.items():
         prompt = _build_user_prompt(criterion, definition, source_excerpt, mindmap_md)
-        response = client.chat.completions.create(
-            model="gpt-4o",
-            messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": prompt},
-            ],
-            response_format={"type": "json_object"},
-        )
-        results[criterion] = json.loads(response.choices[0].message.content)
+        for attempt in range(3):
+            try:
+                response = client.chat.completions.create(
+                    model="gpt-4o",
+                    messages=[
+                        {"role": "system", "content": SYSTEM_PROMPT},
+                        {"role": "user", "content": prompt},
+                    ],
+                    response_format={"type": "json_object"},
+                )
+                parsed = json.loads(response.choices[0].message.content)
+                # Normalise: model sometimes wraps under a key or uses different casing
+                if "score" not in parsed:
+                    # try to find a nested dict that has "score"
+                    for v in parsed.values():
+                        if isinstance(v, dict) and "score" in v:
+                            parsed = v
+                            break
+                results[criterion] = {
+                    "score": int(parsed.get("score", 0)),
+                    "rationale": parsed.get("rationale", parsed.get("reasoning", "")),
+                }
+                break
+            except RateLimitError:
+                if attempt == 2:
+                    raise
+                wait = 60 * (attempt + 1)
+                print(f"  Rate limit hit, waiting {wait}s…")
+                time.sleep(wait)
+            except Exception as e:
+                if attempt == 2:
+                    print(f"  Judge call failed for '{criterion}' after 3 attempts: {e}")
+                    results[criterion] = {"score": 0, "rationale": f"error: {e}"}
+                else:
+                    time.sleep(10)
 
     return results
