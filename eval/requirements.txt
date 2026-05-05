@@ -1,5 +1,5 @@
 bert-score>=0.3.13
 scikit-learn>=1.4
 pdfplumber>=0.11
-google-generativeai>=0.7
+google-genai>=1.0
 pytest>=8.0
