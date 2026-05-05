@@ -42,7 +42,7 @@ export default function MainEditor() {
       try {
         const result = await processDocumentsWithAgents(docs, (tasks) => {
           store.setAgentTasks(tasks)
-        }, prompt)
+        }, prompt, { recursive: true })
         // [EduMap fix] 2026-04-23: Route LLM output through
         // `updateFromLLMMarkdown` so this markdown becomes the new
         // "original" baseline (for the TopNav Original export) and the
