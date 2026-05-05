@@ -34,3 +34,15 @@ coverage/
 
 # Agent / LLM assistant instruction files
 AGENTS.md
+
+# Eval pipeline outputs (generated, not source)
+eval/results/scores.json
+eval/results/summary.csv
+
+# Benchmark PDFs (large binary files)
+eval/benchmark/papers/*.pdf
+
+# Python cache
+eval/__pycache__/
+eval/tests/__pycache__/
+eval/.pytest_cache/
