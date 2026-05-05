@@ -1,151 +1,169 @@
 """
-TF-IDF + KMeans baseline for EduMap evaluation.
+tfidf_baseline.py — Reproducible TF-IDF + KMeans baseline for EduMap evaluation.
 
-Splits the source text into paragraphs, clusters them with KMeans, labels each
-cluster using its top TF-IDF terms, and writes a markdown mind map to
-eval/benchmark/outputs/tfidf/<paper_id>.md.
+Reads pre-extracted .txt files from eval/benchmark/extracted/, clusters sentences
+with hierarchical KMeans, extracts section titles via RAKE, and writes a 3-level
+Markdown mind map to eval/benchmark/outputs/tfidf/<paper_id>.md.
 
-This is the structural baseline: it groups text by word overlap, not by
-conceptual meaning, so it mirrors the paper's vocabulary distribution rather
-than its knowledge structure.
+Design:
+- Sentence-level granularity (not paragraphs)
+- RAKE keyword extraction for section/subsection labels
+- Two-level KMeans: top-level clusters → sub-clusters within each
+- Fixed random seed (42) for reproducibility
 
 Usage:
     python eval/tfidf_baseline.py attention          # single paper
     python eval/tfidf_baseline.py --all              # all papers in extracted/
-    python eval/tfidf_baseline.py attention --k 8    # custom cluster count
+    python eval/tfidf_baseline.py attention --top 5  # custom top-N sentences
 """
 
 import argparse
+import math
 import re
 import sys
 from pathlib import Path
 
-import numpy as np
+import nltk
+from nltk.tokenize import sent_tokenize
+from rake_nltk import Rake
 from sklearn.cluster import KMeans
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
 
 EXTRACTED_DIR = Path(__file__).parent / "benchmark" / "extracted"
 OUTPUT_DIR = Path(__file__).parent / "benchmark" / "outputs" / "tfidf"
 
-DEFAULT_K = 6          # top-level clusters (branches)
-MIN_CHUNK_WORDS = 15   # discard very short fragments
-TOP_TERMS = 4          # terms used to label a cluster
-REPR_PER_CLUSTER = 2   # representative phrases shown per branch
+RANDOM_SEED = 42
+TOP_N_SENTENCES = 5
 
 
-def _split_chunks(text: str) -> list[str]:
-    """Split text into paragraph-level chunks, discarding noise."""
-    raw = re.split(r"\n{2,}", text.strip())
-    chunks = []
-    for chunk in raw:
-        cleaned = " ".join(chunk.split())
-        if len(cleaned.split()) >= MIN_CHUNK_WORDS:
-            chunks.append(cleaned)
-    return chunks
+# ── NLTK setup ──────────────────────────────────────────────────────────────
+
+def _ensure_nltk():
+    for resource, path in [("punkt_tab", "tokenizers/punkt_tab"), ("stopwords", "corpora/stopwords")]:
+        try:
+            nltk.data.find(path)
+        except LookupError:
+            nltk.download(resource, quiet=True)
 
 
-def _extract_title(text: str) -> str:
-    """Heuristic: first non-empty line that looks like a title (short, no period)."""
-    for line in text.splitlines():
-        line = line.strip()
-        if 3 < len(line.split()) <= 20 and not line.endswith("."):
-            return line
-    return "Document"
+# ── Text processing ──────────────────────────────────────────────────────────
+
+def _split_sentences(text: str) -> list[str]:
+    sents = sent_tokenize(text)
+    return [s.strip() for s in sents if len(s.strip()) > 20]
 
 
-def _label_cluster(centroid: np.ndarray, vectorizer: TfidfVectorizer) -> str:
-    """Return a human-readable label from the highest-weight terms at the centroid."""
-    feature_names = vectorizer.get_feature_names_out()
-    top_indices = centroid.argsort()[::-1][:TOP_TERMS]
-    terms = [feature_names[i] for i in top_indices]
-    return " / ".join(t.title() for t in terms)
+def _choose_k(n: int, max_k: int = 12) -> int:
+    return min(max(3, int(math.sqrt(max(1, n)))), max_k)
 
 
-def _representative_chunks(
-    chunk_indices: list[int],
-    chunks: list[str],
-    tfidf_matrix,
-    centroid: np.ndarray,
-    n: int,
-) -> list[str]:
-    """Pick the n chunks closest to the cluster centroid."""
-    if not chunk_indices:
-        return []
-    sub_matrix = tfidf_matrix[chunk_indices]
-    sims = cosine_similarity(sub_matrix, centroid.reshape(1, -1)).flatten()
-    ranked = sorted(zip(sims, chunk_indices), reverse=True)
-    results = []
-    for _, idx in ranked[:n]:
-        # Trim to first sentence or 12 words, whichever is shorter
-        first_sentence = re.split(r"(?<=[.!?])\s", chunks[idx])[0]
-        words = first_sentence.split()
-        snippet = " ".join(words[:12]) + ("…" if len(words) > 12 else "")
-        results.append(snippet)
-    return results
+def _extract_title(texts: list[str]) -> str:
+    r = Rake(max_length=4, min_length=1)
+    r.extract_keywords_from_text(" ".join(texts))
+    phrases = r.get_ranked_phrases()
+    if phrases:
+        title = phrases[0]
+        return (title[:57] + "…" if len(title) > 60 else title).title()
+    return " ".join(texts[0].split()[:6]).title()
 
 
-def build_mindmap(paper_id: str, k: int = DEFAULT_K) -> str:
-    """Run TF-IDF + KMeans on extracted text and return markdown mind map."""
+def _rank_sentences(sentences: list[str], vectorizer: TfidfVectorizer) -> list[float]:
+    return vectorizer.transform(sentences).sum(axis=1).A1.tolist()
+
+
+# ── Core algorithm ───────────────────────────────────────────────────────────
+
+def build_mindmap(paper_id: str, top_n: int = TOP_N_SENTENCES) -> str:
     txt_path = EXTRACTED_DIR / f"{paper_id}.txt"
     if not txt_path.exists():
         raise FileNotFoundError(f"No extracted text for '{paper_id}' at {txt_path}")
 
-    text = txt_path.read_text(encoding="utf-8")
-    chunks = _split_chunks(text)
+    _ensure_nltk()
+    sentences = _split_sentences(txt_path.read_text(encoding="utf-8"))
+    if not sentences:
+        raise RuntimeError(f"No sentences extracted from {txt_path}")
 
-    if len(chunks) < k:
-        k = max(2, len(chunks))
-
+    # Top-level TF-IDF vectorizer (shared for ranking throughout)
     vectorizer = TfidfVectorizer(
+        max_features=2000,
         stop_words="english",
         ngram_range=(1, 2),
-        max_df=0.85,
-        min_df=2,
-        max_features=5000,
     )
-    tfidf_matrix = vectorizer.fit_transform(chunks)
+    X = vectorizer.fit_transform(sentences)
 
-    km = KMeans(n_clusters=k, random_state=42, n_init=10)
-    labels = km.fit_predict(tfidf_matrix)
-    centroids = km.cluster_centers_
+    k = _choose_k(len(sentences))
+    km = KMeans(n_clusters=k, random_state=RANDOM_SEED, n_init=10)
+    labels = km.fit_predict(X)
 
-    title = _extract_title(text)
-    lines = [f"# {title}"]
+    # Group sentences by cluster
+    cluster_map: dict[int, list[str]] = {i: [] for i in range(k)}
+    for idx, lab in enumerate(labels):
+        cluster_map[lab].append(sentences[idx])
 
-    for cluster_id in range(k):
-        member_indices = [i for i, lbl in enumerate(labels) if lbl == cluster_id]
-        if not member_indices:
+    # Order clusters largest-first
+    cluster_order = sorted(cluster_map.items(), key=lambda x: (-len(x[1]), x[0]))
+
+    title = paper_id.replace("_", " ").replace("-", " ").title()
+    lines = [f"# {title}\n"]
+
+    for _, cluster_sentences in cluster_order:
+        section_title = _extract_title(cluster_sentences)
+        lines.append(f"## {section_title}\n")
+
+        n = len(cluster_sentences)
+        sub_k = min(max(1, int(math.sqrt(n))), n, 6)
+
+        if sub_k == 1:
+            lines.append(f"### {section_title} — Details\n")
+            scores = _rank_sentences(cluster_sentences, vectorizer)
+            top = sorted(zip(scores, cluster_sentences), reverse=True)[:top_n]
+            for _, sent in top:
+                lines.append(f"- {sent}")
+            lines.append("")
             continue
 
-        label = _label_cluster(centroids[cluster_id], vectorizer)
-        reprs = _representative_chunks(
-            member_indices, chunks, tfidf_matrix.toarray(), centroids[cluster_id], REPR_PER_CLUSTER
-        )
+        # Sub-cluster within this section
+        sub_vec = TfidfVectorizer(max_features=1000, stop_words="english", ngram_range=(1, 2))
+        try:
+            X_sub = sub_vec.fit_transform(cluster_sentences)
+            sub_labels = KMeans(n_clusters=sub_k, random_state=RANDOM_SEED, n_init=10).fit_predict(X_sub)
+        except Exception:
+            sub_labels = [0] * n
 
-        lines.append(f"## {label}")
-        for r in reprs:
-            lines.append(r)
+        sub_map: dict[int, list[str]] = {i: [] for i in range(sub_k)}
+        for i, lab in enumerate(sub_labels):
+            sub_map[lab].append(cluster_sentences[i])
+
+        for _, sub_sentences in sorted(sub_map.items(), key=lambda x: (-len(x[1]), x[0])):
+            sub_title = _extract_title(sub_sentences)
+            lines.append(f"### {sub_title}\n")
+            scores = _rank_sentences(sub_sentences, vectorizer)
+            top = sorted(zip(scores, sub_sentences), reverse=True)[:max(1, min(top_n, len(sub_sentences)))]
+            for _, sent in top:
+                lines.append(f"- {sent}")
+            lines.append("")
 
     return "\n".join(lines)
 
 
-def run_single(paper_id: str, k: int) -> None:
+# ── CLI ──────────────────────────────────────────────────────────────────────
+
+def run_single(paper_id: str, top_n: int) -> None:
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    md = build_mindmap(paper_id, k)
+    md = build_mindmap(paper_id, top_n)
     out_path = OUTPUT_DIR / f"{paper_id}.md"
     out_path.write_text(md, encoding="utf-8")
-    print(f"  {paper_id} → {out_path}  ({md.count(chr(10))+1} lines)")
+    print(f"  {paper_id} → {out_path}")
 
 
-def run_all(k: int) -> None:
+def run_all(top_n: int) -> None:
     papers = sorted(p.stem for p in EXTRACTED_DIR.glob("*.txt"))
     if not papers:
         print(f"No .txt files found in {EXTRACTED_DIR}")
         sys.exit(1)
-    print(f"Processing {len(papers)} paper(s) with k={k}…")
+    print(f"Processing {len(papers)} paper(s)…")
     for paper_id in papers:
-        run_single(paper_id, k)
+        run_single(paper_id, top_n)
     print("Done.")
 
 
@@ -153,13 +171,13 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="TF-IDF + KMeans mind map baseline")
     parser.add_argument("paper_id", nargs="?", help="Paper ID (stem of .txt file)")
     parser.add_argument("--all", action="store_true", help="Process all extracted papers")
-    parser.add_argument("--k", type=int, default=DEFAULT_K, help=f"Number of clusters (default {DEFAULT_K})")
+    parser.add_argument("--top", type=int, default=TOP_N_SENTENCES, help=f"Top sentences per subsection (default {TOP_N_SENTENCES})")
     args = parser.parse_args()
 
     if args.all:
-        run_all(args.k)
+        run_all(args.top)
     elif args.paper_id:
-        run_single(args.paper_id, args.k)
+        run_single(args.paper_id, args.top)
     else:
         parser.print_help()
         sys.exit(1)

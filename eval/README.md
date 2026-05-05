@@ -5,12 +5,13 @@ and an LLM-as-judge across four qualitative criteria.
 
 ## Setup
 
+From the repo root:
+
 ```bash
-cd eval
-pip install -r requirements.txt
+pip install -r eval/requirements.txt
 ```
 
-Requires `GOOGLE_API_KEY` in your environment (same key used by the app).
+Requires `OPENAI_API_KEY` in the root `.env` file (same key used by the app).
 
 ## Usage
 
@@ -22,18 +23,22 @@ python eval/extract.py eval/benchmark/papers/attention.pdf
 
 Writes to `eval/benchmark/extracted/attention.txt`. Repeat for each paper.
 
-### 2. Add pre-generated mind map outputs
+### 2. Generate TF-IDF baseline outputs
 
-Place `.md` files in `eval/benchmark/outputs/<system>/` named by paper ID:
-
-```
-eval/benchmark/outputs/edumap/attention.md
-eval/benchmark/outputs/tfidf/attention.md
-eval/benchmark/outputs/notebooklm/attention.md
-eval/benchmark/outputs/multimodal/attention.md
+```bash
+python eval/tfidf_baseline.py --all
 ```
 
-### 3. Run the full evaluation
+Writes to `eval/benchmark/outputs/tfidf/`. Requires extracted `.txt` files from step 1.
+
+### 3. Add EduMap and NotebookLM outputs
+
+- **EduMap:** upload each PDF in the app, copy the markdown from the editor, save as `eval/benchmark/outputs/edumap/<paper_id>.md`
+- **NotebookLM:** generate outputs at notebooklm.google.com, save as `eval/benchmark/outputs/notebooklm/<paper_id>.md`
+
+All filenames must match the paper ID (PDF stem). Example: `attention.pdf` → `attention.md`.
+
+### 4. Run the full evaluation
 
 ```bash
 python eval/run_eval.py
@@ -43,12 +48,15 @@ Results are written to `eval/results/scores.json` and `eval/results/summary.csv`
 
 ## Paper IDs
 
-Paper IDs are derived from the PDF filename (without extension). All output files
-for a paper must use the same ID. Example: `bert.pdf` → `bert.txt`, `bert.md`.
+Paper IDs are derived from the PDF filename (without extension). All files across
+`extracted/`, `outputs/edumap/`, `outputs/tfidf/`, etc. must use the same ID.
 
-## Running tests
+## Scripts
 
-```bash
-cd eval
-pytest tests/ -v
-```
+| Script | Purpose |
+|--------|---------|
+| `extract.py` | PDF → `.txt` (one-time, uses pdfplumber) |
+| `tfidf_baseline.py` | `.txt` → TF-IDF+KMeans `.md` baseline |
+| `score.py` | BERTScore + TF-IDF cosine similarity |
+| `judge.py` | LLM-as-judge (GPT-4o), 4 criteria, 1–5 scale |
+| `run_eval.py` | Orchestrator — runs all metrics, writes results |

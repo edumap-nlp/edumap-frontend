@@ -1,4 +1,4 @@
-from bert_score import score as bert_score_fn, BERTScorer
+from bert_score import BERTScorer
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity as sk_cosine
 
