@@ -20,10 +20,10 @@
 <body>
   <div>
     <div class="wrapper">
-      <h1 style="font-family: &#39;Lato&#39;, sans-serif;">EduMap: An Interactive Mind-Map Generator for Long Academic PDFs
-        with Adaptive Highlighting</h1>
-      <h4 style="font-family: &#39;Lato&#39;, sans-serif; ">Spring 2026 CSCI 5541 NLP: Class Project - University of Minnesota</h4>
-      <h4 style="font-family: &#39;Lato&#39;, sans-serif; ">P(What&#39;s Next) = 1</h4>
+      <h1 style="font-family: 'Lato', sans-serif;">EduMap: From Static PDFs to Interactive Knowledge Graphs</h1>
+      <h4 style="font-family: 'Lato', sans-serif; ">An interactive mind-map generator leveraging multimodal LLMs to reduce cognitive load in academic reading</h4>
+      <h4 style="font-family: 'Lato', sans-serif; ">Spring 2026 CSCI 5541 NLP: Class Project - University of Minnesota</h4>
+      <h4 style="font-family: 'Lato', sans-serif; ">P(What's Next) = 1</h4>
 
       <div class="authors-wrapper authors-text-only">
         
@@ -56,7 +56,7 @@
               rel="noopener noreferrer"
               class="external-link button is-normal is-rounded is-dark is-outlined"
             >
-            <span>Live app</span>
+            <span>Live App</span>
             </a>
           </span>      
           <span class="link-block">
@@ -67,6 +67,16 @@
               class="external-link button is-normal is-rounded is-dark is-outlined"
             >
             <span>Code</span>
+            </a>
+          </span>
+          <span class="link-block">
+            <a
+              href="./files/Final_Report.pdf"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="external-link button is-normal is-rounded is-dark is-outlined"
+            >
+            <span>Report PDF</span>
             </a>
           </span>              
         </div>
@@ -79,29 +89,16 @@
   <div class="wrapper">
     <hr>
 
-    <h2 id="task-definition">Task definition</h2>
+    <h2 id="the-problem-and-our-solution">The Problem & Our Solution</h2>
 
-    <h3 id="motivation">Motivation</h3>
+    <h3 id="the-problem">The Problem: Cognitive Overload in Academic Reading</h3>
     <p>
-      Students and researchers frequently have to read long academic PDFs, such as research papers, technical reports, and slide decks, which contain dense, hierarchically structured information. However, traditional PDF viewers present content in a strictly linear format, requiring readers to mentally reconstruct the structure of the document while simultaneously processing complex ideas. This makes it difficult to identify the relationships between sections, determine which concepts are most important, and recognize areas that require deeper cognitive effort, such as formal definitions, mathematical derivations, or intricate arguments. As a result, learners often spend significant time navigating and re-reading documents without forming a clear mental model of the material.
+      Students and researchers regularly navigate dense, hierarchically structured PDFs. However, traditional PDF viewers force readers to process this complex information linearly, requiring them to mentally reconstruct the document's underlying structure. While existing AI summarizers (like NotebookLM) can condense text, they produce static outputs that strip away crucial visual and structural relationships, treating foundational concepts and highly technical arguments exactly the same.
     </p>
 
-    <h3 id="problem-definition">Problem definition</h3>
+    <h3 id="our-solution">Our Solution: Interactive Knowledge Mapping</h3>
     <p>
-      The core problem we address is how to automatically transform long academic PDFs into an interactive, structured representation that supports understanding and prioritization. Specifically, our goal is to extract the hierarchical organization of a document, identify key concepts, estimate the relative importance and cognitive load of different sections, and present this information as an editable mind map.
-    </p>
-    <p>
-      Unlike existing summarization tools that produce static output, the goal of EduMap is to create a dynamic user-centered study tool that allows individuals to edit, reorganize and personalize the structure. By shifting from passive reading to interactive knowledge mapping, the system would support more efficient learning and deeper understanding.
-    </p>
-
-    <hr>
-
-    <h2 id="project-overview">Project overview</h2>
-    <p>
-      EduMap is a web application that converts academic PDFs into interactive, editable mind maps. Users upload a PDF, and the system extracts text, sends it through an LLM pipeline, and renders a hierarchical mind map alongside a synchronized Markdown editor. Users can edit either side, tag concepts with difficulty labels, and export the final map as PNG or Markdown.
-    </p>
-    <p>
-      The frontend is built with React, TypeScript, and React Flow. The backend is a Node/Express server that proxies requests to multiple LLM providers (OpenAI, Anthropic, Google Gemini). Layout is handled by dagre, and state management uses Zustand.
+      EduMap shifts the paradigm from passive reading to active, interactive learning. By combining layout-aware parsing with advanced Large Language Models, EduMap automatically transforms long, complex academic papers into structured, editable mind maps. It serves not just as a summary, but as a personalized "study artifact" that reduces cognitive load, preserves document hierarchy, and helps users prioritize their focus.
     </p>
 
     <p class="sys-img"><img src="./files/app.jpg" alt="Screenshot of the EduMap web application showing the mind map and editor" style="width: 100%; height: auto; display: block; border-radius: 6px; box-shadow: 0 2px 12px rgba(0,0,0,0.12);"></p>
@@ -109,147 +106,73 @@
 
     <hr>
 
-    <h2 id="development-since-proposal">Development since proposal</h2>
+    <h2 id="core-features">Core Features</h2>
+
+    <h3 id="dual-synchronized-view">Dual-Synchronized View</h3>
     <p>
-      Since the initial proposal, several changes were made to both the interface and the underlying pipeline.
+      Experience a seamless workflow with a side-by-side Markdown editing panel and an interactive React Flow mind map. Powered by a centralized state management system, any edit you make in the text or on the canvas stays perfectly in sync in real time.
     </p>
+
+    <h3 id="multimodal-ingestion">Multimodal Ingestion</h3>
     <p>
-      On the frontend, the split-pane layout was retained but redesigned. The right pane still displays the interactive mind map, but the left pane was changed from a raw Markdown editor to a structured sidebar listing all extracted concepts with their difficulty and priority tags. Clicking an item in the sidebar locates it on the map. Nodes were also made collapsible to reduce visual clutter. A custom instructions field was added to the PDF upload dialog, allowing users to specify a focus area for the mind map (for example, focusing on optimization techniques and skipping historical context).
+      Academic papers are more than just text. EduMap's backend precisely extracts figures, complex formulas, and tables, flattening them into a comprehensive multimodal context. This ensures critical visual data is deeply integrated into your generated mind map.
     </p>
+
+    <h3 id="human-ai-collaboration">Human-AI Collaboration & Trust</h3>
     <p>
-      On the pipeline side, a core problem was identified: the LLM tends to mirror the section structure of the input paper rather than reorganizing content by conceptual relationships. Through experimentation with different prompting strategies, this was traced to the model anchoring on section headings in the input text. Two directions are now being pursued to address this.
-    </p>
-    <p>
-      First, an end-to-end multimodal extraction approach was explored. Each PDF page was rendered as a 150 DPI image using PyMuPDF, encoded in Base64, and sent to GPT-4o’s vision model along with an adaptive prompt. Based on the paper type (e.g., clinical studies vs. machine learning papers), the model generated a structured Markdown summary with up to three hierarchical levels. This approach enabled joint processing of text, tables, and figures, and initial results showed that most core textual content was captured. 
-    </p>
-    <p>
-      However, this vision-based approach struggled to reliably extract structured elements, particularly tables. The output often exhibited hallucinations, context misalignment, and inaccurate numeric extraction, indicating limitations in directly relying on end-to-end multimodal reasoning. 
-    </p>
-    <p>
-      To address these issues, a refined modular pipeline was introduced, separating content extraction from semantic understanding. Layout-aware parsing was used to identify text, tables, and figure regions, followed by OCR and image captioning to explicitly capture visual content. The extracted information was then merged into a unified representation, segmented into chunks, and processed by the LLM to generate hierarchical summaries. This modular design improved both the completeness and reliability of multimodal extraction, especially for structured data such as tables.
-    </p>
-    <p>
-      Second, a recursive generation approach was designed but not yet implemented. Rather than generating the full mind map in a single LLM call, the proposed method decomposes the task into multiple steps: first extracting top-level concepts, then progressively expanding each node into sub-concepts through subsequent calls, reaching up to four levels of depth.
-    </p>
-    <p>
-      In addition, preprocessing strategies such as removing section headers and shuffling paragraph order are planned to reduce the model’s reliance on the original document structure, encouraging it to cluster ideas based on semantic relationships rather than predefined sections.
-    </p>
-    <p>
-      At the same time, the multimodal pipeline is expected to be integrated into EduMap as a core component in future iterations. This integration, together with the recursive generation strategy, is intended to improve both the structural organization and the completeness of the generated mind maps.
+      We designed EduMap to be a scaffolding for your thoughts, not a replacement. A unique pencil badge trust mechanism clearly distinguishes your manual edits from the original AI-generated baseline. Combined with a robust undo system and comprehensive export options, you retain complete control over your knowledge graph.
     </p>
 
     <hr>
 
-    <h2 id="preliminary-results">Preliminary results and baseline comparison</h2>
-    <p>
-      To evaluate the quality of generated mind maps, four systems were compared on the same input document (a clinical paper on sepsis criteria in the ED versus discharge diagnosis). Each system processed the same PDF and produced a structured Markdown output, which was then rendered as a mind map.
-    </p>
-    <p>The four systems are:</p>
-    <ol>
-      <li><strong>TF-IDF + KMeans (classical baseline):</strong> A non-LLM pipeline using TF-IDF vectorization, KMeans clustering, and RAKE-based keyphrase extraction to produce cluster titles and representative sentences.</li>
-      <li><strong>Multimodal pipeline:</strong> A modular, layout-aware pipeline that separates content extraction from semantic processing. Text, tables, and figures are first identified through layout parsing, with OCR and image captioning applied to recover structured and visual information. The extracted content is then unified and processed by GPT-4o-mini for chunked summarization and hierarchical consolidation. </li>
-      <li><strong>EduMap (current system):</strong> The deployed pipeline using client-side PDF text extraction and an LLM proxy server supporting multiple providers (OpenAI, Anthropic, Google Gemini) to generate a hierarchical mind map with difficulty and priority tags.</li>
-      <li><strong>NotebookLM:</strong> The same PDF was uploaded directly to Google&#39;s NotebookLM product, and its generated summary output was evaluated using the same rubric.</li>
-    </ol>
+    <h2 id="technical-architecture">Technical Architecture</h2>
 
-    <h3 id="evaluation-methodology">Evaluation methodology</h3>
+    <h3 id="multimodal-extraction-pipeline">Multimodal Extraction Pipeline</h3>
     <p>
-      A manual evaluation rubric was designed with four dimensions, each scored on a 0&#8211;5 scale:
+      To overcome the limitations of standard text-only extractors, our backend utilizes a Python-based, layout-aware parsing program. It intelligently categorizes content into body text, figures, tables, and formulas. For complex, vector-drawn figures that traditional methods miss, we engineered a caption-anchored region rendering technique. Images are then sent alongside their surrounding academic text to a Vision model (e.g., GPT-4o), ensuring descriptions are highly accurate and contextually grounded.
+    </p>
+
+    <h3 id="two-stage-harvest-organize">Two-Stage Harvest & Organize LLM Orchestration</h3>
+    <p>
+      To prevent the AI from simply copying physical section headers or experiencing structural hallucinations, EduMap uses a decoupled, two-step extraction strategy:
     </p>
     <ul>
-      <li><strong>Conceptual accuracy:</strong> Whether the output correctly reflects the key concepts and findings without introducing errors or hallucinations.</li>
-      <li><strong>Coverage of key ideas:</strong> How comprehensively the output captures the essential components of the original document.</li>
-      <li><strong>Hierarchical organization:</strong> The clarity and logical structure of the hierarchy, and whether it organizes content by conceptual relationships rather than mirroring paper section headings.</li>
-      <li><strong>Usefulness for studying:</strong> How useful the output is for learning, reviewing, or quick comprehension.</li>
+      <li><strong>Stage 1 (Harvest):</strong> The LLM extracts only flat, "atomic" core concepts, such as specific methods, principles, or problems.</li>
+      <li><strong>Stage 2 (Organize):</strong> The system feeds these isolated concepts back into the model to construct a logical, 3 to 6-level hierarchical tree, automatically applying priority tags like [Hard] or [Important] to cognitively demanding sections.</li>
     </ul>
-    <p>
-      All team members independently rated each system&#39;s output, and the scores were averaged.
-    </p>
 
-    <table>
-      <thead>
-        <tr>
-          <th style="text-align: center"><strong>System</strong></th>
-          <th style="text-align: center"><strong>Conceptual accuracy</strong></th>
-          <th style="text-align: center"><strong>Coverage of key ideas</strong></th>
-          <th style="text-align: center"><strong>Hierarchical organization</strong></th>
-          <th style="text-align: center"><strong>Usefulness for studying</strong></th>
-          <th style="text-align: center"><strong>Average score</strong></th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td style="text-align: center">TF-IDF + KMeans</td>
-          <td style="text-align: center">2</td>
-          <td style="text-align: center">2</td>
-          <td style="text-align: center">1</td>
-          <td style="text-align: center">1</td>
-          <td style="text-align: center">1.5</td>
-        </tr>
-        <tr>
-          <td style="text-align: center">NotebookLM</td>
-          <td style="text-align: center">4</td>
-          <td style="text-align: center">4</td>
-          <td style="text-align: center">2</td>
-          <td style="text-align: center">3</td>
-          <td style="text-align: center">3.25</td>
-        </tr>
-        <tr>
-          <td style="text-align: center">EduMap</td>
-          <td style="text-align: center">4</td>
-          <td style="text-align: center">4</td>
-          <td style="text-align: center">3</td>
-          <td style="text-align: center">3</td>
-          <td style="text-align: center">3.5</td>
-        </tr>
-        <tr>
-          <td style="text-align: center">Multimodal</td>
-          <td style="text-align: center">4.5</td>
-          <td style="text-align: center">5</td>
-          <td style="text-align: center">5</td>
-          <td style="text-align: center">4</td>
-          <td style="text-align: center">4.75</td>
-        </tr>
-      </tbody>
-      <caption>Table 1. Manual evaluation results (0&#8211;5 scale), averaged across all team members.</caption>
-    </table>
-
-    <h3 id="results-summary">Results</h3>
+    <h3 id="resilient-engineering">Resilient Engineering & State Synchronization</h3>
     <p>
-      The classical TF-IDF + KMeans baseline performed poorly across all dimensions. The extracted clusters were noisy, often picking up headers, affiliations, and fragmented text, producing cluster titles with limited semantic coherence.
-    </p>
-    <p>
-      NotebookLM, used as an external benchmark, scored similarly to EduMap on accuracy and coverage but lower on hierarchical organization. Despite being a mature commercial product, its output also tended to mirror the paper&#39;s section structure rather than reorganizing content conceptually.
-    </p>
-    <p>
-      The multimodal pipeline scored highest overall, particularly on organization and coverage. By processing tables, figures, and text simultaneously, it was able to produce a more complete and better-structured output. However, this pipeline exhibited hallucinations and unreliable numeric extraction in some cases, particularly when reading values from tables.
-    </p>
-
-    <h3 id="key-findings">Key findings</h3>
-    <p>
-      The primary bottleneck across non-multimodal systems is hierarchical organization. Both LLM-based approaches default to reproducing the document&#39;s section structure rather than clustering ideas by meaning. This motivates the planned recursive generation approach, where a first LLM pass identifies top-level concepts without access to section headings, and subsequent passes expand each concept to a controlled depth. Additionally, the strong performance of the multimodal pipeline suggests that incorporating visual and tabular information into the extraction step meaningfully improves output quality, and further optimization of this approach is warranted.
+      Behind the scenes, EduMap utilizes a custom two-way conversion logic between Markdown and the graph node structure, ensuring zero data loss or hierarchy disruption during user edits. To guarantee high availability, the infrastructure includes an automatic model failover mechanism that seamlessly switches between Gemini, OpenAI, and Claude APIs if network issues arise.
     </p>
 
     <hr>
 
-    <h2 id="future-plans">Future plans</h2>
+    <h2 id="evaluation-results">Evaluation & Results</h2>
 
-    <h3 id="mentor-feedback">Mentor feedback</h3>
+    <h3 id="semantic-vs-structural-accuracy">Semantic vs. Structural Accuracy</h3>
     <p>
-      The mentor&#39;s primary feedback centered on grounding the project in HCI research. Specifically, a literature review needs to be done on how users interact with visual knowledge representations, what features of a mind map actually support learning, and how to measure that effectiveness with concrete metrics. The current approach relies on intuition about what makes a good mind map, but without reference to existing HCI findings on visual interface usability, the design decisions lack justification.
+      Automated testing showed that while all systems achieved similar BERTScore F1 (approx. 0.79), EduMap achieved a significantly higher Cosine Similarity (0.395) compared to NotebookLM (0.211), indicating superior structural alignment with original documents.
     </p>
-    <p>
-      The mentor also noted that the current pipeline generates too many nodes, making the output overwhelming rather than useful. A potential solution discussed was adding a chatbot feature that lets users interactively reshape or prune the mind map after generation.
-    </p>
+    <p class="sys-img"><img src="./files/chart1_f1_vs_cosine.png" alt="BERTScore F1 vs Cosine Similarity by System" style="width: 100%; max-width: 640px; height: auto; display: block; margin: 0 auto; border-radius: 6px; box-shadow: 0 2px 12px rgba(0,0,0,0.12);"></p>
+    <p style="text-align: center; font-size: 0.95rem; color: #666; margin-top: 0.5rem;">BERTScore F1 vs Cosine Similarity by System.</p>
 
-    <h3 id="remainder-semester">Plan for remainder of semester</h3>
-    <ul>
-      <li><strong>Week 1 (Apr 7):</strong> Implement recursive generation (four levels deep: first pass extracts top-level concepts, then each level is expanded into sub-concepts by subsequent LLM calls). Conduct HCI literature review on mind map usability and evaluation metrics.</li>
-      <li><strong>Week 2 (Apr 14):</strong> Run evaluation against baseline (e.g., BERTScore, human ratings). Implement node limit controls. Further explore multimodal extraction with GPT-4o vision, and begin integrating the multimodal pipeline into EduMap to improve the completeness and reliability of extracted content.</li>
-      <li><strong>Week 3 (Apr 21):</strong> Explore chatbot feature for interactive remapping. User testing if possible.</li>
-      <li><strong>Week 4 (Apr 28):</strong> Poster preparation.</li>
-      <li><strong>Week 5 (May 5):</strong> Final report writing and submission.</li>
-    </ul>
+    <h3 id="educational-quality">Educational Quality</h3>
+    <p>
+      Across five diverse academic papers (AlexNet, Attention, LLaMA 3, Philosophy, and Quantum), EduMap maintained a high Average Judge Score (avg 4.45), closely competing with NotebookLM (avg 4.70) while offering significantly more structural utility than TF-IDF (avg 1.15).
+    </p>
+    <p class="sys-img"><img src="./files/chart2_per_paper.png" alt="Average Educational Quality Score by Paper and System" style="width: 100%; max-width: 640px; height: auto; display: block; margin: 0 auto; border-radius: 6px; box-shadow: 0 2px 12px rgba(0,0,0,0.12);"></p>
+    <p style="text-align: center; font-size: 0.95rem; color: #666; margin-top: 0.5rem;">Average Educational Quality Score by Paper and System.</p>
+
+    <p class="sys-img"><img src="./files/chart3_avg_judge.png" alt="Average Judge Score across systems" style="width: 100%; max-width: 640px; height: auto; display: block; margin: 0 auto; border-radius: 6px; box-shadow: 0 2px 12px rgba(0,0,0,0.12);"></p>
+    <p style="text-align: center; font-size: 0.95rem; color: #666; margin-top: 0.5rem;">Average Judge Score across systems.</p>
+
+    <hr>
+
+    <h2 id="conclusions-acknowledgments">Conclusions and Acknowledgments</h2>
+    <p>
+      EduMap demonstrates that combining multimodal extraction with a two-stage LLM orchestration strategy can transform dense academic PDFs into interactive, hierarchical mind maps that go beyond what linear summarization tools offer. Across five structurally diverse papers, EduMap achieved comparable semantic preservation to NotebookLM (BERTScore F1 of 0.796 vs. 0.790) while producing an editable, synchronized graph format rather than flat text. The system's weakest point, hierarchical organization on argumentative, non-hierarchical documents like philosophy papers, points to a genuine limitation of the mind map format itself, not just the pipeline. A core engineering contribution is the paired markdown-and-graph editing system with an exportable original baseline, giving users a clear boundary between their own thinking and what the AI generated. Future directions include citation-aware node linking, confidence signaling for uncertain extractions, and collaborative real-time editing. We thank Professor Andy Exley and Daanish Hindustani for their guidance throughout this project, and our classmates for their constructive feedback during the idea pitch and poster presentation.
+    </p>
 
     <hr>
 
